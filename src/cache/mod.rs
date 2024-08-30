@@ -24,7 +24,7 @@ pub mod pipe {
 
     impl<S: CacheStrategy> Pipe<S> {
         pub fn new() -> Self {
-            Self(Pipeline::new(), PhantomData)
+            Self::default()
         }
 
         pub fn is_empty(&self) -> bool {
@@ -46,7 +46,13 @@ pub mod pipe {
             conn: &mut impl redis::aio::ConnectionLike,
         ) -> Result<T, Error> {
             let value: Value = self.0.query_async(conn).await?;
-            T::from_redis_value(&value)
+            T::from_cached_redis_value(&value)
+        }
+    }
+
+    impl<S: CacheStrategy> Default for Pipe<S> {
+        fn default() -> Self {
+            Self(Pipeline::new(), PhantomData)
         }
     }
 }
@@ -64,10 +70,6 @@ impl<S: crate::CacheStrategy> RedisCache<S> {
             .query_async(&mut self.get_connection().await?)
             .await?;
 
-        Ok(if let Some(data) = obj.0 {
-            Some(T::from_redis_value(&data)?)
-        } else {
-            None
-        })
+        obj.0.as_ref().map(T::from_cached_redis_value).transpose()
     }
 }

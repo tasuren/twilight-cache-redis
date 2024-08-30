@@ -207,7 +207,7 @@ pub async fn get<'a, T: FromCachedRedisValue>(
     key: impl Into<RedisKey>,
 ) -> Result<Option<T>, Error> {
     let data: redis::Value = conn.get(key.into()).await?;
-    T::from_redis_value(&data).map(Some)
+    T::from_cached_redis_value(&data).map(Some)
 }
 
 pub fn get_with_pipe<S: CacheStrategy>(pipe: &mut Pipe<S>, key: impl Into<RedisKey>) {
