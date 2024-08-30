@@ -10,11 +10,12 @@ mod interaction;
 mod member;
 mod message;
 mod presence;
+mod reaction;
 
 impl<S: CacheStrategy> UpdateCache<S> for Ready {
     async fn update(&self, cache: &mut RedisCache<S>, pipe: &mut Pipe<S>) -> Result<(), Error> {
         if cache.wants(ResourceType::USER_CURRENT) {
-            pipe.set_current_user(self.user.clone())?;
+            pipe.set_current_user(&S::CurrentUser::from(self.user.clone()))?;
         }
 
         Ok(())
@@ -24,7 +25,7 @@ impl<S: CacheStrategy> UpdateCache<S> for Ready {
 impl<S: CacheStrategy> UpdateCache<S> for UserUpdate {
     async fn update(&self, cache: &mut RedisCache<S>, pipe: &mut Pipe<S>) -> Result<(), Error> {
         if cache.wants(ResourceType::USER_CURRENT) {
-            pipe.set_current_user(self.0.clone())?;
+            pipe.set_current_user(&S::CurrentUser::from(self.0.clone()))?;
         }
 
         Ok(())

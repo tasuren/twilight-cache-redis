@@ -10,16 +10,15 @@ mod guild;
 mod integration;
 mod message;
 mod presence;
-mod reaction;
 mod user;
 
 impl<S: CacheStrategy> RedisCache<S> {
     pub async fn get_current_user(
         &self,
         conn: &mut Connection<'_>,
-    ) -> Result<S::CurrentUser, Error> {
+    ) -> Result<Option<S::CurrentUser>, Error> {
         let raw: redis::Value = conn.get(RedisKey::CurrentUser).await?;
-        S::CurrentUser::from_cached_redis_value(&raw)
+        Option::from_cached_redis_value(&raw)
     }
 }
 
@@ -31,7 +30,7 @@ impl<S: CacheStrategy> Pipe<S> {
 
     pub(crate) fn set_current_user(
         &mut self,
-        current_user: S::CurrentUser,
+        current_user: &S::CurrentUser,
     ) -> Result<&mut Self, Error> {
         self.0
             .set(RedisKey::CurrentUser, current_user.to_redis_arg()?);
