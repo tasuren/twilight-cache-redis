@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use serde::{Deserialize, Serialize};
 use twilight_model::{
     gateway::payload::incoming::MemberUpdate,
