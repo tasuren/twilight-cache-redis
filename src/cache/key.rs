@@ -7,6 +7,7 @@ use twilight_model::id::{
 
 #[derive(Debug, Clone, Copy)]
 pub enum RedisKey {
+    CurrentUser,
     Channel {
         id: Id<ChannelMarker>,
     },
@@ -178,6 +179,7 @@ impl redis::ToRedisArgs for RedisKey {
         W: ?Sized + redis::RedisWrite,
     {
         let key: KeyKind = match self {
+            Self::CurrentUser => "CURRENT_USER".into(),
             Self::Channel { id } => ("CHANNEL", *id).into(),
             Self::GuildChannelId { guild_id } => ("GUILD_CHANNEL_ID", *guild_id).into(),
             Self::Emoji { id } => ("EMOJI", *id).into(),
