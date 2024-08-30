@@ -11,6 +11,7 @@ mod member;
 mod message;
 mod presence;
 mod reaction;
+mod role;
 
 impl<S: CacheStrategy> UpdateCache<S> for Ready {
     async fn update(&self, cache: &mut RedisCache<S>, pipe: &mut Pipe<S>) -> Result<(), Error> {

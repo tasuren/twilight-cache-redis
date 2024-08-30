@@ -11,6 +11,7 @@ mod integration;
 mod message;
 mod presence;
 mod user;
+mod role;
 
 impl<S: CacheStrategy> RedisCache<S> {
     pub async fn get_current_user(

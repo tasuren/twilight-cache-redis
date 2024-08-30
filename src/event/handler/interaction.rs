@@ -37,7 +37,7 @@ impl<S: CacheStrategy> UpdateCache<S> for InteractionCreate {
                         return Ok(());
                     }
 
-                    if let Some(guild_id) = self.guild_id {
+                    if let Some(_guild_id) = self.guild_id {
                         /*
                         // Implement this by `cache_interaction_member`
                         // after twilight 1.16 is coming.
