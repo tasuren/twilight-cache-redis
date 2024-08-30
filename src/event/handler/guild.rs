@@ -1,12 +1,16 @@
 use std::mem::take;
 
-use twilight_model::{gateway::payload::incoming::GuildCreate, guild::Guild};
+use twilight_model::{
+    gateway::payload::incoming::{GuildCreate, UnavailableGuild},
+    guild::Guild,
+    id::{marker::GuildMarker, Id},
+};
 
 use crate::{
     cache::Pipe, config::ResourceType, traits::CacheStrategy, Error, RedisCache, UpdateCache,
 };
 
-async fn cache_guild<S: CacheStrategy>(
+pub async fn cache_guild<S: CacheStrategy>(
     cache: &mut RedisCache<S>,
     pipe: &mut Pipe<S>,
     mut guild: Guild,
@@ -30,6 +34,13 @@ async fn cache_guild<S: CacheStrategy>(
     Ok(())
 }
 
+pub fn uncache_guild<S: CacheStrategy>(pipe: &mut Pipe<S>, guild_id: Id<GuildMarker>) {
+    pipe.add_unavailable_guild_id(guild_id)
+        .delete_guild(guild_id);
+
+    // TODO: Do opposite of cache_guild
+}
+
 impl<S: CacheStrategy> UpdateCache<S> for GuildCreate {
     async fn update(&self, cache: &mut RedisCache<S>, pipe: &mut Pipe<S>) -> Result<(), Error> {
         match self {
@@ -41,5 +52,15 @@ impl<S: CacheStrategy> UpdateCache<S> for GuildCreate {
             }
             g => cache_guild(cache, pipe, g.0.clone()).await,
         }
+    }
+}
+
+impl<S: CacheStrategy> UpdateCache<S> for UnavailableGuild {
+    async fn update(&self, cache: &mut RedisCache<S>, pipe: &mut Pipe<S>) -> Result<(), Error> {
+        if cache.wants(ResourceType::GUILD) {
+            uncache_guild(pipe, self.id);
+        }
+
+        Ok(())
     }
 }
