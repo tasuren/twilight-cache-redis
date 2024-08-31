@@ -11,21 +11,27 @@ use crate::{
 
 cmd::impl_set_wrapper_methods!(
     user_guild_ids,
-    UserGuildId,
-    user_id,
-    guild_id,
-    UserMarker,
-    GuildMarker
+    key: {
+        RedisKey::UserGuildId: {
+            user_id: Id<UserMarker>
+        }
+    },
+    value: { guild_id: Id<GuildMarker> }
 );
 cmd::impl_set_wrapper_methods!(
     guild_member_ids,
-    GuildMemberId,
-    guild_id,
-    member_id,
-    GuildMarker,
-    UserMarker
+    key: {
+        RedisKey::GuildMemberId: {
+            guild_id: Id<GuildMarker>
+        }
+    },
+    value: { member_id: Id<UserMarker> }
 );
-cmd::impl_global_set_wrapper_methods!(user_ids, UserId, user_id, UserMarker);
+cmd::impl_global_set_wrapper_methods!(
+    user_ids,
+    key: UserId,
+    value: { user_id: Id<UserMarker> }
+);
 cmd::impl_str_wrapper_methods!(
     user,
     key: { user_id: Id<UserMarker> },

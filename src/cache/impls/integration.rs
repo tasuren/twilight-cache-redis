@@ -11,11 +11,14 @@ use crate::{
 
 cmd::impl_set_wrapper_methods!(
     guild_integration_ids,
-    GuildIntegrationId,
-    guild_id,
-    integration_id,
-    GuildMarker,
-    IntegrationMarker
+    key: {
+        RedisKey::GuildIntegrationId: {
+            guild_id: Id<GuildMarker>
+        }
+    },
+    value: {
+        integration_id: Id<IntegrationMarker>
+    }
 );
 cmd::impl_str_wrapper_methods_with_two_id!(
     guild_integration,

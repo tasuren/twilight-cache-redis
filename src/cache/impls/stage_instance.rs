@@ -10,11 +10,12 @@ use crate::{
 
 cmd::impl_set_wrapper_methods!(
     guild_stage_instance_id,
-    GuildStageInstanceId,
-    guild_id,
-    value_name,
-    GuildMarker,
-    StageMarker
+    key: {
+        RedisKey::GuildStageInstanceId: {
+            guild_id: Id<GuildMarker>
+        }
+    },
+    value: { stage_id: Id<StageMarker> }
 );
 cmd::impl_str_wrapper_methods!(
     stage_instance,

@@ -1,18 +1,21 @@
 use twilight_model::id::{marker::GuildMarker, Id};
 
 use crate::{
-    cache::{cmd, helper::*, Pipe, RedisKey, ToCachedRedisArg},
+    cache::{cmd, Pipe, RedisKey, ToCachedRedisArg},
     traits::CacheStrategy,
     Error,
 };
 
 cmd::impl_global_set_wrapper_methods!(
     unavailable_guild_id,
-    UnavailableGuildId,
-    guild_id,
-    GuildMarker
+    key: UnavailableGuildId,
+    value: { guild_id: Id<GuildMarker> }
 );
-cmd::impl_global_set_wrapper_methods!(guild_ids, GuildId, guild_id, GuildMarker);
+cmd::impl_global_set_wrapper_methods!(
+    guild_ids,
+    key: GuildId,
+    value: { guild_id: Id<GuildMarker> }
+);
 cmd::impl_str_wrapper_methods!(
     guild,
     key: { guild_id: Id<GuildMarker> },

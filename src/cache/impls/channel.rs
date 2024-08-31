@@ -11,11 +11,14 @@ use crate::{
 
 cmd::impl_set_wrapper_methods!(
     guild_channel_ids,
-    GuildChannelId,
-    guild_id,
-    channel_id,
-    GuildMarker,
-    ChannelMarker
+    key: {
+        RedisKey::GuildChannelId: {
+            guild_id: Id<GuildMarker>
+        }
+    },
+    value: {
+        channel_id: Id<ChannelMarker>
+    }
 );
 cmd::impl_str_wrapper_methods!(
     channel,

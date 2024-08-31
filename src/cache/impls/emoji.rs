@@ -11,11 +11,14 @@ use crate::{
 
 cmd::impl_set_wrapper_methods!(
     guild_emoji_ids,
-    GuildEmojiId,
-    guild_id,
-    emoji_id,
-    GuildMarker,
-    EmojiMarker
+    key: {
+        RedisKey::GuildEmojiId: {
+            guild_id: Id<GuildMarker>
+        }
+    },
+    value: {
+        emoji_id: Id<EmojiMarker>
+    }
 );
 cmd::impl_str_wrapper_methods!(
     emoji,

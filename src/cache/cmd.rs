@@ -48,11 +48,12 @@ pub fn len_with_pipe<S: CacheStrategy>(pipe: &mut Pipe<S>, key: RedisKey) {
 macro_rules! impl_set_wrapper_methods {
     (
         $set_name:ident,
-        $redis_key:ident,
-        $key_name:ident,
-        $value_name:ident,
-        $key_id_marker:ty,
-        $value_id_marker:ty
+        key: {
+            RedisKey::$redis_key:ident: {
+                $key_name:ident: Id<$key_id_marker:ty>
+            }
+        },
+        value: { $value_name:ident: Id<$value_id_marker:ty>}
     ) => {
         $crate::cache::cmd::__export::paste! {
         mod [<$set_name _set_wrapper_impl>] {
@@ -132,9 +133,8 @@ macro_rules! impl_set_wrapper_methods {
 macro_rules! impl_global_set_wrapper_methods {
     (
         $set_name:ident,
-        $redis_key:ident,
-        $value_name:ident,
-        $value_id_marker:ty
+        key: $redis_key:ident,
+        value: { $value_name:ident: Id<$value_id_marker:ty> }
     ) => {
         $crate::cache::cmd::__export::paste! {
         mod [<$set_name _set_wrapper_impl>] {
