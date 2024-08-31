@@ -26,7 +26,11 @@ cmd::impl_set_wrapper_methods!(
     UserMarker
 );
 cmd::impl_global_set_wrapper_methods!(user_ids, UserId, user_id, UserMarker);
-cmd::impl_str_wrapper_methods!(user, user_id, User, UserMarker);
+cmd::impl_str_wrapper_methods!(
+    user,
+    key: { user_id: Id<UserMarker> },
+    value: User
+);
 cmd::impl_str_wrapper_methods_with_two_id!(
     member,
     guild_id,

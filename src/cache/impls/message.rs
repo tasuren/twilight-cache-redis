@@ -64,7 +64,11 @@ impl<S: CacheStrategy> Pipe<S> {
     }
 }
 
-cmd::impl_str_wrapper_methods!(message, message_id, Message, MessageMarker);
+cmd::impl_str_wrapper_methods!(
+    message,
+    key: { message_id: Id<MessageMarker> },
+    value: Message
+);
 
 impl<S: CacheStrategy> Pipe<S> {
     pub(crate) fn push_channel_message_id(

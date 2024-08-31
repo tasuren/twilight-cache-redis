@@ -17,7 +17,11 @@ cmd::impl_set_wrapper_methods!(
     GuildMarker,
     ChannelMarker
 );
-cmd::impl_str_wrapper_methods!(channel, channel_id, Channel, ChannelMarker);
+cmd::impl_str_wrapper_methods!(
+    channel,
+    key: { channel_id: Id<ChannelMarker> },
+    value: Channel
+);
 
 impl<S: CacheStrategy> RedisCache<S> {
     pub async fn get_guild_channel_ids<'a, 'stmt>(

@@ -217,9 +217,8 @@ pub fn get_with_pipe<S: CacheStrategy>(pipe: &mut Pipe<S>, key: impl Into<RedisK
 macro_rules! impl_str_wrapper_methods {
     (
         $get_name:ident,
-        $key_name:ident,
-        $value_name:ident,
-        $value_id_marker:ty
+        key: { $key_name:ident: Id<$key_id_marker:ty> },
+        value: $value_name:ident
     ) => {
         $crate::cache::cmd::__export::paste! {
         mod [< $get_name _str_wrapper_impl >] {
@@ -230,7 +229,7 @@ macro_rules! impl_str_wrapper_methods {
                 pub async fn [<get_ $get_name>](
                     &self,
                     conn: &mut Connection<'_>,
-                    $key_name: Id<$value_id_marker>,
+                    $key_name: Id<$key_id_marker>,
                 ) -> Result<Option<S::$value_name>, Error> {
                     get(conn, $key_name).await
                 }
@@ -239,7 +238,7 @@ macro_rules! impl_str_wrapper_methods {
             impl<S: CacheStrategy> $crate::cache::Pipe<S> {
                 pub fn [<get_ $get_name>](
                     &mut self,
-                    $key_name: Id<$value_id_marker>,
+                    $key_name: Id<$key_id_marker>,
                 ) -> &mut Self {
                     get_with_pipe(self, $key_name);
                     self

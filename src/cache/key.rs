@@ -1,7 +1,7 @@
 use twilight_model::id::{
     marker::{
         self, ChannelMarker, EmojiMarker, GuildMarker, IntegrationMarker, MessageMarker,
-        RoleMarker, UserMarker,
+        RoleMarker, StageMarker, UserMarker,
     },
     Id,
 };
@@ -66,6 +66,12 @@ pub enum RedisKey {
     Role {
         id: Id<RoleMarker>,
     },
+    GuildStageInstanceId {
+        guild_id: Id<GuildMarker>,
+    },
+    StageInstance {
+        id: Id<StageMarker>,
+    },
 }
 
 macro_rules! impl_from_id {
@@ -86,7 +92,8 @@ impl_from_id!(
     (Guild, GuildMarker),
     (User, UserMarker),
     (Message, MessageMarker),
-    (Role, RoleMarker)
+    (Role, RoleMarker),
+    (StageInstance, StageMarker),
 );
 
 macro_rules! impl_from_two_id {
@@ -208,6 +215,10 @@ impl redis::ToRedisArgs for RedisKey {
             Self::Presence { guild_id, user_id } => ("PRESENCE", *guild_id, *user_id).into(),
             Self::GuildRoleId { guild_id } => ("GUILD_ROLE_ID", *guild_id).into(),
             Self::Role { id } => ("ROLE", *id).into(),
+            Self::GuildStageInstanceId { guild_id } => {
+                ("GUILD_STAGE_INSTANCE_STAGE_ID", *guild_id).into()
+            }
+            Self::StageInstance { id } => ("STAGE_INSTANCE", *id).into(),
         };
 
         let bytes: Vec<u8> = key.into();

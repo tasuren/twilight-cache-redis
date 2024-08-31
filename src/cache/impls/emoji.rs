@@ -17,7 +17,11 @@ cmd::impl_set_wrapper_methods!(
     GuildMarker,
     EmojiMarker
 );
-cmd::impl_str_wrapper_methods!(emoji, emoji_id, Emoji, EmojiMarker);
+cmd::impl_str_wrapper_methods!(
+    emoji,
+    key: { emoji_id: Id<EmojiMarker> },
+    value: Emoji
+);
 
 impl<S: CacheStrategy> Pipe<S> {
     pub(crate) fn add_guild_emoji_ids(

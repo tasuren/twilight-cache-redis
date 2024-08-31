@@ -10,8 +10,9 @@ mod guild;
 mod integration;
 mod message;
 mod presence;
-mod user;
 mod role;
+mod stage_instance;
+mod user;
 
 impl<S: CacheStrategy> RedisCache<S> {
     pub async fn get_current_user(

@@ -13,7 +13,11 @@ cmd::impl_global_set_wrapper_methods!(
     GuildMarker
 );
 cmd::impl_global_set_wrapper_methods!(guild_ids, GuildId, guild_id, GuildMarker);
-cmd::impl_str_wrapper_methods!(guild, guild_id, Guild, GuildMarker);
+cmd::impl_str_wrapper_methods!(
+    guild,
+    key: { guild_id: Id<GuildMarker> },
+    value: Guild
+);
 
 impl<S: CacheStrategy> Pipe<S> {
     pub(crate) fn add_unavailable_guild_id(&mut self, guild_id: Id<GuildMarker>) -> &mut Self {
