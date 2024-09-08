@@ -12,27 +12,27 @@ use crate::{
 };
 
 impl<S: CacheStrategy> RedisCache<S> {
-    pub async fn len_channel_message_ids(
+    pub async fn len_channel_messages(
         &self,
         conn: &mut Connection<'_>,
         channel_id: Id<ChannelMarker>,
     ) -> Result<usize, Error> {
-        Ok(conn.llen(RedisKey::ChannelMessageId { channel_id }).await?)
+        Ok(conn.llen(RedisKey::ChannelMessages { channel_id }).await?)
     }
 
-    pub async fn index_channel_message_ids(
+    pub async fn index_channel_messages(
         &self,
         conn: &mut Connection<'_>,
         channel_id: Id<ChannelMarker>,
         index: isize,
     ) -> Result<Option<S::Message>, Error> {
         let raw: redis::Value = conn
-            .lindex(RedisKey::ChannelMessageId { channel_id }, index)
+            .lindex(RedisKey::ChannelMessages { channel_id }, index)
             .await?;
         Option::from_cached_redis_value(&raw)
     }
 
-    pub async fn range_channel_message_ids(
+    pub async fn range_channel_messages(
         &self,
         conn: &mut Connection<'_>,
         channel_id: Id<ChannelMarker>,
@@ -40,7 +40,7 @@ impl<S: CacheStrategy> RedisCache<S> {
         stop: isize,
     ) -> Result<VecDeque<S::Message>, Error> {
         let raw: redis::Value = conn
-            .lrange(RedisKey::ChannelMessageId { channel_id }, start, stop)
+            .lrange(RedisKey::ChannelMessages { channel_id }, start, stop)
             .await?;
 
         VecDeque::from_cached_redis_value(&raw)
@@ -48,18 +48,18 @@ impl<S: CacheStrategy> RedisCache<S> {
 }
 
 impl<S: CacheStrategy> Pipe<S> {
-    pub fn len_channel_message_ids(&mut self, channel_id: Id<ChannelMarker>) -> &mut Self {
-        self.0.llen(RedisKey::ChannelMessageId { channel_id });
+    pub fn len_channel_messages(&mut self, channel_id: Id<ChannelMarker>) -> &mut Self {
+        self.0.llen(RedisKey::ChannelMessages { channel_id });
         self
     }
 
-    pub fn index_channel_message_ids(
+    pub fn index_channel_messages(
         &mut self,
         channel_id: Id<ChannelMarker>,
         index: isize,
     ) -> &mut Self {
         self.0
-            .lindex(RedisKey::ChannelMessageId { channel_id }, index);
+            .lindex(RedisKey::ChannelMessages { channel_id }, index);
         self
     }
 }
@@ -71,28 +71,28 @@ cmd::impl_str_wrapper_methods!(
 );
 
 impl<S: CacheStrategy> Pipe<S> {
-    pub(crate) fn push_channel_message_id(
+    pub(crate) fn push_channel_message(
         &mut self,
         channel_id: Id<ChannelMarker>,
         message_id: Id<MessageMarker>,
     ) -> &mut Self {
         self.0
-            .rpush(RedisKey::ChannelMessageId { channel_id }, message_id.get());
+            .rpush(RedisKey::ChannelMessages { channel_id }, message_id.get());
         self
     }
 
-    pub(crate) fn pop_channel_message_id(&mut self, channel_id: Id<ChannelMarker>) -> &mut Self {
-        self.0.lpop(RedisKey::ChannelMessageId { channel_id }, None);
+    pub(crate) fn pop_channel_message(&mut self, channel_id: Id<ChannelMarker>) -> &mut Self {
+        self.0.lpop(RedisKey::ChannelMessages { channel_id }, None);
         self
     }
 
-    pub(crate) fn remove_channel_message_id(
+    pub(crate) fn remove_channel_message(
         &mut self,
         channel_id: Id<ChannelMarker>,
         message_id: Id<MessageMarker>,
     ) -> &mut Self {
         self.0.lrem(
-            RedisKey::ChannelMessageId { channel_id },
+            RedisKey::ChannelMessages { channel_id },
             0,
             message_id.get(),
         );

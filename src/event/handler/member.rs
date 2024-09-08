@@ -22,7 +22,7 @@ fn cache_member_impl<S: CacheStrategy>(
     member: &S::Member,
 ) -> Result<(), Error> {
     pipe.set_member(guild_id, user_id, member)?
-        .add_guild_member_id(guild_id, user_id);
+        .add_guild_member(guild_id, user_id);
 
     Ok(())
 }
@@ -51,8 +51,11 @@ pub fn cache_member<S: CacheStrategy>(
     guild_id: Id<GuildMarker>,
     member: Member,
 ) -> Result<(), Error> {
-    pipe.add_guild_member_id(guild_id, member.user.id)
-        .set_member(guild_id, member.user.id, &S::Member::from(member))?;
+    pipe.add_guild_member(guild_id, member.user.id).set_member(
+        guild_id,
+        member.user.id,
+        &S::Member::from(member),
+    )?;
     Ok(())
 }
 
@@ -62,7 +65,7 @@ pub fn uncache_member<S: CacheStrategy>(
     user_id: Id<UserMarker>,
 ) {
     pipe.delete_member(guild_id, user_id)
-        .remove_guild_member_id(guild_id, user_id);
+        .remove_guild_member(guild_id, user_id);
 }
 
 impl<S: CacheStrategy> UpdateCache<S> for MemberAdd {
@@ -152,7 +155,7 @@ impl<S: CacheStrategy> UpdateCache<S> for MemberUpdate {
         }
 
         if cache.wants(ResourceType::USER) {
-            user::cache_user(pipe, self.user.clone(), Some(self.guild_id))?;
+            pipe.set_user(self.user.id, &S::User::from(self.user.clone()))?;
         }
 
         Ok(())

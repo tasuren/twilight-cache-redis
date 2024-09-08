@@ -5,7 +5,8 @@ use twilight_model::{
 };
 
 use crate::{
-    cache::Pipe, config::ResourceType, traits::CacheStrategy, Error, RedisCache, UpdateCache,
+    cache::Pipe, config::ResourceType, event::user::cache_user, traits::CacheStrategy, Error,
+    RedisCache, UpdateCache,
 };
 
 pub async fn cache_emojis<S: CacheStrategy>(
@@ -18,7 +19,7 @@ pub async fn cache_emojis<S: CacheStrategy>(
 
     let mut removal_emoji_ids = Vec::new();
     let additional_emojis = {
-        let mut iter = cache.scan_guild_emoji_ids(&mut conn, guild_id).await?;
+        let mut iter = cache.scan_guild_emojis(&mut conn, guild_id).await?;
 
         while let Some(emoji_id) = iter.next_item().await? {
             if let Some(i) = incoming.iter().position(|e| e.id == emoji_id) {
@@ -36,14 +37,12 @@ pub async fn cache_emojis<S: CacheStrategy>(
             // If user is set, add the user to the cache.
             for emoji in additional_emojis.iter() {
                 if let Some(user) = &emoji.user {
-                    pipe.add_user_id(user.id)
-                        .add_user_guild_id(user.id, guild_id)
-                        .set_user(user.id, &S::User::from(user.clone()))?;
+                    cache_user(pipe, user.clone(), Some(guild_id))?;
                 }
             }
         }
 
-        pipe.add_guild_emoji_ids(guild_id, additional_emojis.iter().map(|e| e.id));
+        pipe.add_guild_emoji(guild_id, additional_emojis.iter().map(|e| e.id));
         pipe.set_emojis(
             additional_emojis
                 .into_iter()
@@ -52,7 +51,7 @@ pub async fn cache_emojis<S: CacheStrategy>(
     }
 
     if !removal_emoji_ids.is_empty() {
-        pipe.remove_guild_emoji_ids(guild_id, &removal_emoji_ids);
+        pipe.remove_guild_emoji(guild_id, &removal_emoji_ids);
         pipe.delete_emojis(removal_emoji_ids.iter().copied());
     }
 

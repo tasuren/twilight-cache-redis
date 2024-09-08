@@ -52,10 +52,10 @@ impl<S: CacheStrategy> UpdateCache<S> for ChannelCreate {
 impl<S: CacheStrategy> UpdateCache<S> for ChannelUpdate {
     async fn update(&self, cache: &mut RedisCache<S>, pipe: &mut Pipe<S>) -> Result<(), Error> {
         if cache.wants(ResourceType::CHANNEL) {
-            cache_channel_model(pipe, self.0.clone())
-        } else {
-            Ok(())
+            pipe.set_channel(self.id, &S::Channel::from(self.0.clone()))?;
         }
+
+        Ok(())
     }
 }
 
@@ -63,10 +63,8 @@ impl<S: CacheStrategy> UpdateCache<S> for ChannelDelete {
     async fn update(&self, cache: &mut RedisCache<S>, pipe: &mut Pipe<S>) -> Result<(), Error> {
         if cache.wants(ResourceType::CHANNEL) {
             uncache_channel(pipe, self.guild_id, self.id);
-
-            Ok(())
-        } else {
-            Ok(())
         }
+
+        Ok(())
     }
 }

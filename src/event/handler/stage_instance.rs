@@ -13,7 +13,7 @@ pub fn cache_stage_instance<S: CacheStrategy>(
     pipe: &mut Pipe<S>,
     stage_instance: StageInstance,
 ) -> Result<(), Error> {
-    pipe.add_guild_stage_instance_id(stage_instance.guild_id, stage_instance.id)
+    pipe.add_guild_stage_instance(stage_instance.guild_id, stage_instance.id)
         .set_stage_instance(
             stage_instance.guild_id,
             stage_instance.id,
@@ -27,7 +27,7 @@ pub fn uncache_stage_instance<S: CacheStrategy>(
     guild_id: Id<GuildMarker>,
     stage_id: Id<StageMarker>,
 ) {
-    pipe.remove_guild_stage_instance_id(guild_id, stage_id)
+    pipe.remove_guild_stage_instance(guild_id, stage_id)
         .delete_stage_instance(stage_id);
 }
 
@@ -54,7 +54,11 @@ impl<S: CacheStrategy> UpdateCache<S> for StageInstanceDelete {
 impl<S: CacheStrategy> UpdateCache<S> for StageInstanceUpdate {
     async fn update(&self, cache: &mut RedisCache<S>, pipe: &mut Pipe<S>) -> Result<(), Error> {
         if cache.wants(ResourceType::STAGE_INSTANCE) {
-            cache_stage_instance(pipe, self.0.clone())?;
+            pipe.set_stage_instance(
+                self.guild_id,
+                self.id,
+                &S::StageInstance::from(self.0.clone()),
+            )?;
         }
 
         Ok(())

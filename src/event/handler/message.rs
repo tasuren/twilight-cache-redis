@@ -1,12 +1,15 @@
 use twilight_model::{
-    gateway::payload::incoming::{MessageCreate, MessageDelete, MessageDeleteBulk},
+    gateway::payload::incoming::{MessageCreate, MessageDelete, MessageDeleteBulk, MessageUpdate},
     id::{
         marker::{ChannelMarker, MessageMarker},
         Id,
     },
 };
 
-use crate::{cache::Pipe, config::ResourceType, CacheStrategy, Error, RedisCache, UpdateCache};
+use crate::{
+    cache::Pipe, config::ResourceType, traits::CacheableMessage, CacheStrategy, Error, RedisCache,
+    UpdateCache,
+};
 
 fn uncache_message<S: CacheStrategy>(
     pipe: &mut Pipe<S>,
@@ -14,7 +17,7 @@ fn uncache_message<S: CacheStrategy>(
     message_id: Id<MessageMarker>,
 ) {
     pipe.delete_message(message_id)
-        .remove_channel_message_id(channel_id, message_id);
+        .remove_channel_message(channel_id, message_id);
 }
 
 impl<S: CacheStrategy> UpdateCache<S> for MessageCreate {
@@ -36,19 +39,19 @@ impl<S: CacheStrategy> UpdateCache<S> for MessageCreate {
         }
 
         let (cache_size, oldest_id): (usize, Option<Id<MessageMarker>>) = Pipe::<S>::new()
-            .len_channel_message_ids(self.channel_id)
-            .index_channel_message_ids(self.channel_id, 0)
+            .len_channel_messages(self.channel_id)
+            .index_channel_messages(self.channel_id, 0)
             .query(&mut cache.get_connection().await?)
             .await?;
 
         if cache_size >= cache.config.message_cache_size {
             if let Some(oldest_id) = oldest_id {
-                pipe.pop_channel_message_id(self.channel_id)
+                pipe.pop_channel_message(self.channel_id)
                     .delete_message(oldest_id);
             }
         }
 
-        pipe.push_channel_message_id(self.channel_id, self.id)
+        pipe.push_channel_message(self.channel_id, self.id)
             .set_message(self.id, &S::Message::from(self.0.clone()))?;
 
         Ok(())
@@ -71,6 +74,26 @@ impl<S: CacheStrategy> UpdateCache<S> for MessageDeleteBulk {
             for id in self.ids.iter() {
                 uncache_message(pipe, self.channel_id, *id);
             }
+        }
+
+        Ok(())
+    }
+}
+
+impl<S: CacheStrategy> UpdateCache<S> for MessageUpdate {
+    async fn update(
+        &self,
+        cache: &mut RedisCache<S>,
+        pipe: &mut crate::cache::Pipe<S>,
+    ) -> Result<(), Error> {
+        if cache.wants(ResourceType::MESSAGE) {
+            if let Some(mut message) = cache
+                .get_message(&mut cache.get_connection().await?, self.id)
+                .await?
+            {
+                message.update_with_message_update(self);
+                pipe.set_message(self.id, &message)?;
+            };
         }
 
         Ok(())

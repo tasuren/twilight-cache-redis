@@ -10,9 +10,9 @@ use crate::{
 };
 
 cmd::impl_set_wrapper_methods!(
-    guild_emoji_ids,
+    guild_emojis,
     key: {
-        RedisKey::GuildEmojiId: {
+        RedisKey::GuildEmojis: {
             guild_id: Id<GuildMarker>
         }
     },
@@ -27,25 +27,25 @@ cmd::impl_str_wrapper_methods!(
 );
 
 impl<S: CacheStrategy> Pipe<S> {
-    pub(crate) fn add_guild_emoji_ids(
+    pub(crate) fn add_guild_emoji(
         &mut self,
         guild_id: Id<GuildMarker>,
         addition_emoji_ids: impl Iterator<Item = Id<EmojiMarker>>,
     ) -> &mut Self {
         self.0.sadd(
-            RedisKey::GuildEmojiId { guild_id },
+            RedisKey::GuildEmojis { guild_id },
             addition_emoji_ids.collect_as_u64(),
         );
         self
     }
 
-    pub(crate) fn remove_guild_emoji_ids(
+    pub(crate) fn remove_guild_emoji(
         &mut self,
         guild_id: Id<GuildMarker>,
         removal_emoji_ids: &[Id<EmojiMarker>],
     ) -> &mut Self {
         self.0.srem(
-            RedisKey::GuildEmojiId { guild_id },
+            RedisKey::GuildEmojis { guild_id },
             removal_emoji_ids.iter().copied().collect_as_u64(),
         );
         self

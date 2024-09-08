@@ -68,8 +68,8 @@ pub struct WithGuildId<T> {
 }
 
 impl<T: ToBytes + FromBytes> WithGuildId<T> {
-    pub fn new(guild_id: Id<GuildMarker>, resource: T) -> Result<Self, ()> {
-        Ok(Self { guild_id, resource })
+    pub fn new(guild_id: Id<GuildMarker>, resource: T) -> Self {
+        Self { guild_id, resource }
     }
 
     /// Make serialized `WithGuildId`.

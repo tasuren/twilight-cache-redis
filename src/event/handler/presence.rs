@@ -6,7 +6,7 @@ pub fn cache_presence<S: CacheStrategy>(
     pipe: &mut Pipe<S>,
     presence: Presence,
 ) -> Result<(), Error> {
-    pipe.add_guild_presence_user_id(presence.guild_id, presence.user.id())
+    pipe.add_guild_presence(presence.guild_id, presence.user.id())
         .set_presence(
             presence.guild_id,
             presence.user.id(),

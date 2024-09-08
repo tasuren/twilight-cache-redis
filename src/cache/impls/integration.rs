@@ -10,9 +10,9 @@ use crate::{
 };
 
 cmd::impl_set_wrapper_methods!(
-    guild_integration_ids,
+    guild_integrations,
     key: {
-        RedisKey::GuildIntegrationId: {
+        RedisKey::GuildIntegrations: {
             guild_id: Id<GuildMarker>
         }
     },
@@ -23,47 +23,20 @@ cmd::impl_set_wrapper_methods!(
 cmd::impl_str_wrapper_methods_with_two_id!(
     guild_integration,
     key: { guild_id: GuildMarker, integration_id: IntegrationMarker },
-    value: GuildIntegration
+    value: S::GuildIntegration
 );
 
 impl<S: CacheStrategy> Pipe<S> {
-    /// Overwrite guild integration with new data.
-    pub(crate) fn update_guild_integration(
-        &mut self,
-        guild_id: Id<GuildMarker>,
-        integration_id: Id<IntegrationMarker>,
-        integration: &S::GuildIntegration,
-    ) -> Result<&mut Self, Error> {
-        self.0.set(
-            RedisKey::GuildIntegration {
-                guild_id,
-                id: integration_id,
-            },
-            integration.to_bytes()?,
-        );
-        Ok(self)
-    }
-
     pub(crate) fn add_guild_integration(
         &mut self,
         guild_id: Id<GuildMarker>,
         integration_id: Id<IntegrationMarker>,
-        integration: &S::GuildIntegration,
-    ) -> Result<&mut Self, Error> {
-        self.0
-            .sadd(
-                RedisKey::GuildIntegrationId { guild_id },
-                integration_id.get(),
-            )
-            .set(
-                RedisKey::GuildIntegration {
-                    guild_id,
-                    id: integration_id,
-                },
-                integration.to_bytes()?,
-            );
-
-        Ok(self)
+    ) -> &mut Self {
+        self.0.sadd(
+            RedisKey::GuildIntegrations { guild_id },
+            integration_id.get(),
+        );
+        self
     }
 
     pub(crate) fn remove_guild_integration(
@@ -71,15 +44,40 @@ impl<S: CacheStrategy> Pipe<S> {
         guild_id: Id<GuildMarker>,
         integration_id: Id<IntegrationMarker>,
     ) -> &mut Self {
-        self.0
-            .srem(
-                RedisKey::GuildIntegrationId { guild_id },
-                integration_id.get(),
-            )
-            .del(RedisKey::GuildIntegration {
+        self.0.srem(
+            RedisKey::GuildIntegrations { guild_id },
+            integration_id.get(),
+        );
+
+        self
+    }
+
+    pub(crate) fn set_integration(
+        &mut self,
+        guild_id: Id<GuildMarker>,
+        integration_id: Id<IntegrationMarker>,
+        integration: &S::GuildIntegration,
+    ) -> Result<&mut Self, Error> {
+        self.0.set(
+            RedisKey::Integration {
                 guild_id,
                 id: integration_id,
-            });
+            },
+            integration.to_bytes()?,
+        );
+
+        Ok(self)
+    }
+
+    pub(crate) fn delete_integration(
+        &mut self,
+        guild_id: Id<GuildMarker>,
+        integration_id: Id<IntegrationMarker>,
+    ) -> &mut Self {
+        self.0.del(RedisKey::Integration {
+            guild_id,
+            id: integration_id,
+        });
 
         self
     }

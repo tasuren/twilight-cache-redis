@@ -14,8 +14,11 @@ pub fn cache_sticker<S: CacheStrategy>(
     guild_id: Id<GuildMarker>,
     sticker: Sticker,
 ) -> Result<(), Error> {
-    pipe.add_guild_sticker_id(guild_id, sticker.id)
-        .set_sticker(guild_id, sticker.id, &S::Sticker::from(sticker))?;
+    pipe.add_guild_sticker(guild_id, sticker.id).set_sticker(
+        guild_id,
+        sticker.id,
+        &S::Sticker::from(sticker),
+    )?;
     Ok(())
 }
 
@@ -24,7 +27,7 @@ pub fn uncache_sticker<S: CacheStrategy>(
     guild_id: Id<GuildMarker>,
     sticker_id: Id<StickerMarker>,
 ) {
-    pipe.remove_guild_sticker_id(guild_id, sticker_id)
+    pipe.remove_guild_sticker(guild_id, sticker_id)
         .delete_sticker(sticker_id);
 }
 
@@ -35,9 +38,7 @@ impl<S: CacheStrategy> UpdateCache<S> for GuildStickersUpdate {
         }
 
         let mut conn = cache.get_connection().await?;
-        let mut guild_sticker_ids = cache
-            .scan_guild_sticker_ids(&mut conn, self.guild_id)
-            .await?;
+        let mut guild_sticker_ids = cache.scan_guild_stickers(&mut conn, self.guild_id).await?;
 
         let additional = self.stickers.clone();
 

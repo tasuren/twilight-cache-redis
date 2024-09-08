@@ -12,67 +12,67 @@ pub enum RedisKey {
     Channel {
         id: Id<ChannelMarker>,
     },
-    GuildChannel {
+    GuildChannels {
         guild_id: Id<GuildMarker>,
     },
     Emoji {
         id: Id<EmojiMarker>,
     },
-    GuildEmojiId {
+    GuildEmojis {
         guild_id: Id<GuildMarker>,
     },
-    GuildIntegration {
+    Integration {
         guild_id: Id<GuildMarker>,
         id: Id<IntegrationMarker>,
     },
-    GuildIntegrationId {
+    GuildIntegrations {
         guild_id: Id<GuildMarker>,
     },
     User {
         id: Id<UserMarker>,
     },
-    UserId,
-    UserGuildId {
+    Users,
+    UserGuilds {
         user_id: Id<UserMarker>,
     },
     Member {
         guild_id: Id<GuildMarker>,
         id: Id<UserMarker>,
     },
-    GuildMemberId {
+    GuildMembers {
         guild_id: Id<GuildMarker>,
     },
-    UnavailableGuildId,
+    UnavailableGuilds,
     Guild {
         id: Id<GuildMarker>,
     },
-    GuildId,
-    ChannelMessageId {
+    Guilds,
+    ChannelMessages {
         channel_id: Id<ChannelMarker>,
     },
     Message {
         id: Id<MessageMarker>,
     },
-    GuildPresenceUserId {
+    GuildPresences {
         guild_id: Id<GuildMarker>,
     },
     Presence {
         guild_id: Id<GuildMarker>,
         user_id: Id<UserMarker>,
     },
-    GuildRoleId {
+    GuildRoles {
         guild_id: Id<GuildMarker>,
     },
     Role {
         id: Id<RoleMarker>,
     },
-    GuildStageInstanceId {
+    GuildStageInstances {
         guild_id: Id<GuildMarker>,
     },
     StageInstance {
         id: Id<StageMarker>,
     },
-    GuildStickerId {
+    GuildStickers {
         guild_id: Id<GuildMarker>,
     },
     Sticker {
@@ -130,7 +130,7 @@ macro_rules! impl_from_two_id {
 }
 
 impl_from_two_id!(
-    (GuildIntegration, {
+    (Integration, {
         guild_id: GuildMarker,
         id: IntegrationMarker
     }),
@@ -210,30 +210,28 @@ impl redis::ToRedisArgs for RedisKey {
         let key: KeyKind = match self {
             Self::CurrentUser => "CURRENT_USER".into(),
             Self::Channel { id } => ("CHANNEL", *id).into(),
-            Self::GuildChannel { guild_id } => ("GUILD_CHANNEL_ID", *guild_id).into(),
+            Self::GuildChannels { guild_id } => ("GUILD_CHANNELS", *guild_id).into(),
             Self::Emoji { id } => ("EMOJI", *id).into(),
-            Self::GuildEmojiId { guild_id } => ("GUILD_EMOJI_ID", *guild_id).into(),
-            Self::GuildIntegration { guild_id, id } => ("INTEGRATION", *guild_id, *id).into(),
-            Self::GuildIntegrationId { guild_id } => ("GUILD_INTEGRATION_ID", *guild_id).into(),
+            Self::GuildEmojis { guild_id } => ("GUILD_EMOJIS", *guild_id).into(),
+            Self::Integration { guild_id, id } => ("INTEGRATION", *guild_id, *id).into(),
+            Self::GuildIntegrations { guild_id } => ("GUILD_INTEGRATIONS", *guild_id).into(),
             Self::User { id } => ("USER", *id).into(),
-            Self::UserId => "USER_ID".into(),
-            Self::UserGuildId { user_id } => ("USER_GUILD_ID", *user_id).into(),
+            Self::Users => "USERS".into(),
+            Self::UserGuilds { user_id } => ("USER_GUILDS", *user_id).into(),
             Self::Member { guild_id, id } => ("MEMBER", *guild_id, *id).into(),
-            Self::GuildMemberId { guild_id } => ("GUILD_MEMBER_ID", *guild_id).into(),
-            Self::UnavailableGuildId => "UNAVAILABLE_GUILD_ID".into(),
+            Self::GuildMembers { guild_id } => ("GUILD_MEMBERS", *guild_id).into(),
+            Self::UnavailableGuilds => "UNAVAILABLE_GUILDS".into(),
             Self::Guild { id } => ("GUILD", *id).into(),
-            Self::GuildId => "GUILD_ID".into(),
-            Self::ChannelMessageId { channel_id } => ("CHANNEL_MESSAGE_ID", *channel_id).into(),
+            Self::Guilds => "GUILDS".into(),
+            Self::ChannelMessages { channel_id } => ("CHANNEL_MESSAGES", *channel_id).into(),
             Self::Message { id } => ("MESSAGE", *id).into(),
-            Self::GuildPresenceUserId { guild_id } => ("GUILD_PRESENCE_USER_ID", *guild_id).into(),
+            Self::GuildPresences { guild_id } => ("GUILD_PRESENCES", *guild_id).into(),
             Self::Presence { guild_id, user_id } => ("PRESENCE", *guild_id, *user_id).into(),
-            Self::GuildRoleId { guild_id } => ("GUILD_ROLE_ID", *guild_id).into(),
+            Self::GuildRoles { guild_id } => ("GUILD_ROLES", *guild_id).into(),
             Self::Role { id } => ("ROLE", *id).into(),
-            Self::GuildStageInstanceId { guild_id } => {
-                ("GUILD_STAGE_INSTANCE_ID", *guild_id).into()
-            }
+            Self::GuildStageInstances { guild_id } => ("GUILD_STAGE_INSTANCES", *guild_id).into(),
             Self::StageInstance { id } => ("STAGE_INSTANCE", *id).into(),
-            Self::GuildStickerId { guild_id } => ("GUILD_STICKER_ID", *guild_id).into(),
+            Self::GuildStickers { guild_id } => ("GUILD_STICKERS", *guild_id).into(),
             Self::Sticker { id } => ("STICKER", *id).into(),
             Self::ChannelVoiceState { channel_id } => ("VOICE_STATE_USER", *channel_id).into(),
             Self::VoiceState { guild_id, user_id } => ("VOICE_STATE", *guild_id, *user_id).into(),

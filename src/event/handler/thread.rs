@@ -46,7 +46,7 @@ impl<S: CacheStrategy> UpdateCache<S> for ThreadUpdate {
         pipe: &mut crate::cache::Pipe<S>,
     ) -> Result<(), Error> {
         if cache.wants(ResourceType::CHANNEL) {
-            cache_channel(pipe, self.0.clone())?;
+            pipe.set_channel(self.id, &S::Channel::from(self.0.clone()))?;
         }
 
         Ok(())

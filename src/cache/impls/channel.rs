@@ -9,9 +9,9 @@ use crate::{
 };
 
 cmd::impl_set_wrapper_methods!(
-    guild_channel,
+    guild_channels,
     key: {
-        RedisKey::GuildChannel: {
+        RedisKey::GuildChannels: {
             guild_id: Id<GuildMarker>
         }
     },
@@ -32,7 +32,7 @@ impl<S: CacheStrategy> crate::cache::Pipe<S> {
         channel_id: Id<ChannelMarker>,
     ) -> &mut Self {
         self.0
-            .sadd(RedisKey::GuildChannel { guild_id }, channel_id.get());
+            .sadd(RedisKey::GuildChannels { guild_id }, channel_id.get());
         self
     }
 
@@ -42,7 +42,7 @@ impl<S: CacheStrategy> crate::cache::Pipe<S> {
         channel_id: Id<ChannelMarker>,
     ) -> &mut Self {
         self.0
-            .srem(RedisKey::GuildChannel { guild_id }, channel_id.get());
+            .srem(RedisKey::GuildChannels { guild_id }, channel_id.get());
         self
     }
 

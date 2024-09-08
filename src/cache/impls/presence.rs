@@ -4,18 +4,33 @@ use twilight_model::id::{
 };
 
 use crate::{
-    cache::{Pipe, RedisKey, ToBytes},
+    cache::{cmd, Pipe, RedisKey, ToBytes},
     CacheStrategy, Error,
 };
 
+cmd::impl_set_wrapper_methods!(
+    guild_presences,
+    key: {
+        RedisKey::GuildPresences: {
+            guild_id: Id<GuildMarker>
+        }
+    },
+    value: { user_id: Id<UserMarker> }
+);
+cmd::impl_str_wrapper_methods_with_two_id!(
+    presence,
+    key: { guild_id: GuildMarker, user_id: UserMarker },
+    value: S::Presence
+);
+
 impl<S: CacheStrategy> Pipe<S> {
-    pub(crate) fn add_guild_presence_user_id(
+    pub(crate) fn add_guild_presence(
         &mut self,
         guild_id: Id<GuildMarker>,
         user_id: Id<UserMarker>,
     ) -> &mut Self {
         self.0
-            .sadd(RedisKey::GuildPresenceUserId { guild_id }, user_id.get());
+            .sadd(RedisKey::GuildPresences { guild_id }, user_id.get());
         self
     }
 

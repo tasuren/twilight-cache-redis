@@ -1,5 +1,4 @@
 use redis::AsyncCommands;
-use twilight_model::id::Id;
 
 use super::{helper::AsyncIter, FromCachedRedisValue, Pipe, ToBytes};
 use crate::{cache::RedisKey, CacheStrategy, Connection, Error};
@@ -184,13 +183,14 @@ macro_rules! impl_global_set_wrapper_methods {
                 pub fn [<$set_name _contains>](
                     &mut self,
                     $value_name: $value_id_marker,
-                ) -> &mut Self {
+                ) -> Result<&mut Self, Error> {
                     contains_with_pipe(
                         self,
                         RedisKey::$redis_key,
                         $value_name
-                    );
-                    self
+                    )?;
+
+                    Ok(self)
                 }
 
                 pub fn [<len_ $set_name>](
@@ -260,7 +260,7 @@ macro_rules! impl_str_wrapper_methods_with_two_id {
             $id_name:ident: $id_marker:ty,
             $id2_name:ident: $id2_marker:ty
         },
-        value: $value_name:ident
+        value: $value_type:ty
     ) => {
         $crate::cache::cmd::__export::paste! {
         mod [< $get_name _str_wrapper_impl >] {
@@ -273,7 +273,7 @@ macro_rules! impl_str_wrapper_methods_with_two_id {
                     conn: &mut Connection<'_>,
                     $id_name: Id<$id_marker>,
                     $id2_name: Id<$id2_marker>
-                ) -> Result<Option<S::$value_name>, Error> {
+                ) -> Result<Option<$value_type>, Error> {
                     get(conn, ($id_name, $id2_name)).await
                 }
             }

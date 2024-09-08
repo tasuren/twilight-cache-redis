@@ -7,13 +7,13 @@ use crate::{
 };
 
 cmd::impl_global_set_wrapper_methods!(
-    unavailable_guild_id,
-    key: UnavailableGuildId,
+    unavailable_guilds,
+    key: UnavailableGuilds,
     value: { guild_id: Id<GuildMarker> }
 );
 cmd::impl_global_set_wrapper_methods!(
-    guild_ids,
-    key: GuildId,
+    guilds,
+    key: Guilds,
     value: { guild_id: Id<GuildMarker> }
 );
 cmd::impl_str_wrapper_methods!(
@@ -23,18 +23,23 @@ cmd::impl_str_wrapper_methods!(
 );
 
 impl<S: CacheStrategy> Pipe<S> {
-    pub(crate) fn add_unavailable_guild_id(&mut self, guild_id: Id<GuildMarker>) -> &mut Self {
-        self.0.sadd(RedisKey::UnavailableGuildId, guild_id.get());
+    pub(crate) fn add_unavailable_guild(&mut self, guild_id: Id<GuildMarker>) -> &mut Self {
+        self.0.sadd(RedisKey::UnavailableGuilds, guild_id.get());
         self
     }
 
-    pub(crate) fn remove_unavailable_guild_id(&mut self, guild_id: Id<GuildMarker>) -> &mut Self {
-        self.0.srem(RedisKey::UnavailableGuildId, guild_id.get());
+    pub(crate) fn remove_unavailable_guild(&mut self, guild_id: Id<GuildMarker>) -> &mut Self {
+        self.0.srem(RedisKey::UnavailableGuilds, guild_id.get());
         self
     }
 
-    pub(crate) fn add_guild_id(&mut self, guild_id: Id<GuildMarker>) -> &mut Self {
-        self.0.sadd(RedisKey::GuildId, guild_id.get());
+    pub(crate) fn add_guild(&mut self, guild_id: Id<GuildMarker>) -> &mut Self {
+        self.0.sadd(RedisKey::Guilds, guild_id.get());
+        self
+    }
+
+    pub(crate) fn remove_guild(&mut self, guild_id: Id<GuildMarker>) -> &mut Self {
+        self.0.srem(RedisKey::Guilds, guild_id.get());
         self
     }
 
@@ -46,11 +51,6 @@ impl<S: CacheStrategy> Pipe<S> {
         self.0.set(RedisKey::from(guild_id), guild.to_bytes()?);
 
         Ok(self)
-    }
-
-    pub(crate) fn remove_guild_id(&mut self, guild_id: Id<GuildMarker>) -> &mut Self {
-        self.0.srem(RedisKey::GuildId, guild_id.get());
-        self
     }
 
     pub(crate) fn delete_guild(&mut self, guild_id: Id<GuildMarker>) -> &mut Self {

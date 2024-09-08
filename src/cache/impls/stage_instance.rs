@@ -9,9 +9,9 @@ use crate::{
 };
 
 cmd::impl_set_wrapper_methods!(
-    guild_stage_instance_id,
+    guild_stage_instances,
     key: {
-        RedisKey::GuildStageInstanceId: {
+        RedisKey::GuildStageInstances: {
             guild_id: Id<GuildMarker>
         }
     },
@@ -24,23 +24,23 @@ cmd::impl_str_wrapper_methods!(
 );
 
 impl<S: CacheStrategy> Pipe<S> {
-    pub(crate) fn add_guild_stage_instance_id(
+    pub(crate) fn add_guild_stage_instance(
         &mut self,
         guild_id: Id<GuildMarker>,
         stage_id: Id<StageMarker>,
     ) -> &mut Self {
         self.0
-            .sadd(RedisKey::GuildStageInstanceId { guild_id }, stage_id.get());
+            .sadd(RedisKey::GuildStageInstances { guild_id }, stage_id.get());
         self
     }
 
-    pub(crate) fn remove_guild_stage_instance_id(
+    pub(crate) fn remove_guild_stage_instance(
         &mut self,
         guild_id: Id<GuildMarker>,
         stage_id: Id<StageMarker>,
     ) -> &mut Self {
         self.0
-            .srem(RedisKey::GuildStageInstanceId { guild_id }, stage_id.get());
+            .srem(RedisKey::GuildStageInstances { guild_id }, stage_id.get());
         self
     }
 

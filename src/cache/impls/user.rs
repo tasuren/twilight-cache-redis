@@ -10,26 +10,26 @@ use crate::{
 };
 
 cmd::impl_set_wrapper_methods!(
-    user_guild_ids,
+    user_guilds,
     key: {
-        RedisKey::UserGuildId: {
+        RedisKey::UserGuilds: {
             user_id: Id<UserMarker>
         }
     },
     value: { guild_id: Id<GuildMarker> }
 );
 cmd::impl_set_wrapper_methods!(
-    guild_member_ids,
+    guild_members,
     key: {
-        RedisKey::GuildMemberId: {
+        RedisKey::GuildMembers: {
             guild_id: Id<GuildMarker>
         }
     },
     value: { member_id: Id<UserMarker> }
 );
 cmd::impl_global_set_wrapper_methods!(
-    user_ids,
-    key: UserId,
+    users,
+    key: Users,
     value: { user_id: Id<UserMarker> }
 );
 cmd::impl_str_wrapper_methods!(
@@ -40,28 +40,40 @@ cmd::impl_str_wrapper_methods!(
 cmd::impl_str_wrapper_methods_with_two_id!(
     member,
     key: { guild_id: GuildMarker, user_id: UserMarker },
-    value: Member
+    value: S::Member
 );
 
 impl<S: CacheStrategy> Pipe<S> {
     /// This associates a user with a guild.
-    pub(crate) fn add_user_guild_id(
+    pub(crate) fn add_user_guild(
         &mut self,
         user_id: Id<UserMarker>,
         guild_id: Id<GuildMarker>,
     ) -> &mut Self {
         self.0
-            .sadd(RedisKey::UserGuildId { user_id }, guild_id.get());
+            .sadd(RedisKey::UserGuilds { user_id }, guild_id.get());
         self
     }
 
-    pub(crate) fn remove_user_guild_id(
+    pub(crate) fn remove_user_guild(
         &mut self,
         user_id: Id<UserMarker>,
         guild_id: Id<GuildMarker>,
     ) -> &mut Self {
         self.0
-            .srem(RedisKey::UserGuildId { user_id }, guild_id.get());
+            .srem(RedisKey::UserGuilds { user_id }, guild_id.get());
+        self
+    }
+
+    pub(crate) fn add_user(&mut self, user_id: Id<UserMarker>) -> &mut Self {
+        self.0.sadd(RedisKey::Users, user_id.get());
+        self
+    }
+
+    pub(crate) fn remove_user(&mut self, user_id: Id<UserMarker>) -> &mut Self {
+        self.0
+            .srem(RedisKey::Users, user_id.get())
+            .del(RedisKey::from(user_id));
         self
     }
 
@@ -74,20 +86,28 @@ impl<S: CacheStrategy> Pipe<S> {
         Ok(self)
     }
 
-    pub(crate) fn add_user_id(&mut self, user_id: Id<UserMarker>) -> &mut Self {
-        self.0.sadd(RedisKey::UserId, user_id.get());
-        self
-    }
-
     pub(crate) fn delete_user(&mut self, user_id: Id<UserMarker>) -> &mut Self {
         self.0.del(RedisKey::from(user_id));
         self
     }
 
-    pub(crate) fn remove_user_id(&mut self, user_id: Id<UserMarker>) -> &mut Self {
+    pub(crate) fn add_guild_member(
+        &mut self,
+        guild_id: Id<GuildMarker>,
+        user_id: Id<UserMarker>,
+    ) -> &mut Self {
         self.0
-            .srem(RedisKey::UserId, user_id.get())
-            .del(RedisKey::from(user_id));
+            .sadd(RedisKey::GuildMembers { guild_id }, user_id.get());
+        self
+    }
+
+    pub(crate) fn remove_guild_member(
+        &mut self,
+        guild_id: Id<GuildMarker>,
+        user_id: Id<UserMarker>,
+    ) -> &mut Self {
+        self.0
+            .srem(RedisKey::GuildMembers { guild_id }, user_id.get());
         self
     }
 
@@ -102,32 +122,12 @@ impl<S: CacheStrategy> Pipe<S> {
         Ok(self)
     }
 
-    pub(crate) fn add_guild_member_id(
-        &mut self,
-        guild_id: Id<GuildMarker>,
-        user_id: Id<UserMarker>,
-    ) -> &mut Self {
-        self.0
-            .sadd(RedisKey::GuildMemberId { guild_id }, user_id.get());
-        self
-    }
-
     pub(crate) fn delete_member(
         &mut self,
         guild_id: Id<GuildMarker>,
         user_id: Id<UserMarker>,
     ) -> &mut Self {
         self.0.del(RedisKey::from((guild_id, user_id)));
-        self
-    }
-
-    pub(crate) fn remove_guild_member_id(
-        &mut self,
-        guild_id: Id<GuildMarker>,
-        user_id: Id<UserMarker>,
-    ) -> &mut Self {
-        self.0
-            .srem(RedisKey::GuildMemberId { guild_id }, user_id.get());
         self
     }
 }

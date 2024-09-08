@@ -8,6 +8,15 @@ use crate::{
     CacheStrategy, Error,
 };
 
+cmd::impl_set_wrapper_methods!(
+    guild_roles,
+    key: {
+        RedisKey::GuildRoles: {
+            guild_id: Id<GuildMarker>
+        }
+    },
+    value: { role_id: Id<RoleMarker> }
+);
 cmd::impl_str_wrapper_methods!(
     guild_role_ids,
     key: { guild_id: Id<GuildMarker> },
@@ -15,23 +24,23 @@ cmd::impl_str_wrapper_methods!(
 );
 
 impl<S: CacheStrategy> Pipe<S> {
-    pub(crate) fn add_guild_role_id(
+    pub(crate) fn add_guild_role(
         &mut self,
         guild_id: Id<GuildMarker>,
         role_id: Id<RoleMarker>,
     ) -> &mut Self {
         self.0
-            .sadd(RedisKey::GuildRoleId { guild_id }, role_id.get());
+            .sadd(RedisKey::GuildRoles { guild_id }, role_id.get());
         self
     }
 
-    pub(crate) fn remove_guild_role_id(
+    pub(crate) fn remove_guild_role(
         &mut self,
         guild_id: Id<GuildMarker>,
         role_id: Id<RoleMarker>,
     ) -> &mut Self {
         self.0
-            .srem(RedisKey::GuildRoleId { guild_id }, role_id.get());
+            .srem(RedisKey::GuildRoles { guild_id }, role_id.get());
         self
     }
 
