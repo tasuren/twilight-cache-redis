@@ -409,8 +409,8 @@ impl PartialEq<Guild> for CachedGuild {
     }
 }
 
-crate::impl_to_cached_redis_arg_for_model!(CachedGuild);
-crate::impl_from_cached_redis_value_for_model!(CachedGuild);
+crate::cache::value::impl_to_bytes_for_model!(CachedGuild);
+crate::cache::value::impl_from_bytes_for_model!(CachedGuild);
 
 impl CacheableGuild for CachedGuild {
     fn id(&self) -> Id<GuildMarker> {

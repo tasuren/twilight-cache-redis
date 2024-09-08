@@ -1,18 +1,19 @@
 use std::{collections::HashSet, iter::Map, marker::PhantomData};
 
+use redis::Value;
 use twilight_model::id::Id;
 
+use super::{FromCachedRedisValue, RedisKey, ToBytes};
 use crate::Error;
-use super::{RedisKey, ToCachedRedisArg};
 
 pub(crate) fn serialize_with_keys<I, T>(
     iter: impl Iterator<Item = (I, T)>,
 ) -> Result<Vec<(RedisKey, Vec<u8>)>, Error>
 where
     I: Into<RedisKey>,
-    T: ToCachedRedisArg,
+    T: ToBytes,
 {
-    iter.map(|(id, e)| Ok::<(RedisKey, Vec<u8>), Error>((id.into(), e.to_redis_arg()?)))
+    iter.map(|(id, e)| Ok::<(RedisKey, Vec<u8>), Error>((id.into(), e.to_bytes()?)))
         .collect()
 }
 
@@ -60,28 +61,34 @@ where
 }
 
 // AsyncIter Helper:
-pub struct IdAsyncIter<'a, M> {
-    iter: redis::AsyncIter<'a, u64>,
-    marker: PhantomData<Id<M>>,
+pub struct AsyncIter<'a, V> {
+    iter: redis::AsyncIter<'a, Value>,
+    _resource: PhantomData<V>,
 }
 
-impl<'a, M> IdAsyncIter<'a, M> {
-    pub fn new(iter: redis::AsyncIter<'a, u64>) -> Self {
+impl<'a, V: FromCachedRedisValue> AsyncIter<'a, V> {
+    pub fn new(iter: redis::AsyncIter<'a, Value>) -> Self {
         Self {
             iter,
-            marker: PhantomData,
+            _resource: PhantomData,
         }
     }
 
-    pub async fn next_item(&mut self) -> Option<Id<M>> {
-        self.iter.next_item().await.map(|v| Id::new(v))
+    pub async fn next_item(&mut self) -> Result<Option<V>, Error> {
+        if let Some(v) = self.iter.next_item().await {
+            Option::from_cached_redis_value(&v)
+        } else {
+            Ok(None)
+        }
     }
+}
 
-    pub async fn to_hash_set(&mut self) -> HashSet<Id<M>> {
+impl<'a, V: Eq + std::hash::Hash + FromCachedRedisValue> AsyncIter<'a, V> {
+    pub async fn collect_hash_set(&mut self) -> Result<HashSet<V>, Error> {
         let mut data = HashSet::new();
-        while let Some(v) = self.next_item().await {
+        while let Some(v) = self.next_item().await? {
             data.insert(v);
         }
-        data
+        Ok(data)
     }
 }

@@ -15,7 +15,7 @@ pub fn cache_role<S: CacheStrategy>(
     role: Role,
 ) -> Result<(), Error> {
     pipe.add_guild_role_id(guild_id, role.id)
-        .set_role(role.id, &S::Role::from(role))?;
+        .set_role(guild_id, role.id, &S::Role::from(role))?;
 
     Ok(())
 }

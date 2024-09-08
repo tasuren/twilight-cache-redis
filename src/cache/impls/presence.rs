@@ -4,7 +4,7 @@ use twilight_model::id::{
 };
 
 use crate::{
-    cache::{Pipe, RedisKey, ToCachedRedisArg},
+    cache::{Pipe, RedisKey, ToBytes},
     CacheStrategy, Error,
 };
 
@@ -27,7 +27,7 @@ impl<S: CacheStrategy> Pipe<S> {
     ) -> Result<&mut Self, Error> {
         self.0.set(
             RedisKey::Presence { guild_id, user_id },
-            presence.to_redis_arg()?,
+            presence.to_bytes()?,
         );
         Ok(self)
     }

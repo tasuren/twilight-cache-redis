@@ -187,8 +187,8 @@ impl PartialEq<PartialMember> for CachedMember {
     }
 }
 
-crate::impl_to_cached_redis_arg_for_model!(CachedMember);
-crate::impl_from_cached_redis_value_for_model!(CachedMember);
+crate::cache::value::impl_to_bytes_for_model!(CachedMember);
+crate::cache::value::impl_from_bytes_for_model!(CachedMember);
 impl CacheableMember for CachedMember {
     fn roles(&self) -> &[Id<RoleMarker>] {
         &self.roles

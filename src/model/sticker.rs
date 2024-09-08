@@ -146,8 +146,8 @@ impl PartialEq<Sticker> for CachedSticker {
     }
 }
 
-crate::impl_to_cached_redis_arg_for_model!(CachedSticker);
-crate::impl_from_cached_redis_value_for_model!(CachedSticker);
+crate::cache::value::impl_to_bytes_for_model!(CachedSticker);
+crate::cache::value::impl_from_bytes_for_model!(CachedSticker);
 
 impl CacheableSticker for CachedSticker {
     fn id(&self) -> Id<StickerMarker> {

@@ -4,7 +4,7 @@ use twilight_model::id::{
 };
 
 use crate::{
-    cache::{cmd, Pipe, RedisKey, ToCachedRedisArg},
+    cache::{cmd, Pipe, RedisKey, WithGuildId},
     CacheStrategy, Connection, Error,
 };
 
@@ -20,7 +20,7 @@ cmd::impl_set_wrapper_methods!(
 cmd::impl_str_wrapper_methods!(
     stage_instance,
     key: { stage_id: Id<StageMarker> },
-    value: StageInstance
+    value: WithGuildId<S::StageInstance>
 );
 
 impl<S: CacheStrategy> Pipe<S> {
@@ -46,11 +46,14 @@ impl<S: CacheStrategy> Pipe<S> {
 
     pub(crate) fn set_stage_instance(
         &mut self,
+        guild_id: Id<GuildMarker>,
         stage_id: Id<StageMarker>,
         stage_instance: &S::StageInstance,
     ) -> Result<&mut Self, Error> {
-        self.0
-            .set(RedisKey::from(stage_id), stage_instance.to_redis_arg()?);
+        self.0.set(
+            RedisKey::from(stage_id),
+            WithGuildId::to_bytes(guild_id, stage_instance)?,
+        );
         Ok(self)
     }
 

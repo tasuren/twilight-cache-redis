@@ -1,7 +1,7 @@
 use twilight_model::id::{
     marker::{
         self, ChannelMarker, EmojiMarker, GuildMarker, IntegrationMarker, MessageMarker,
-        RoleMarker, StageMarker, UserMarker,
+        RoleMarker, StageMarker, StickerMarker, UserMarker,
     },
     Id,
 };
@@ -12,7 +12,7 @@ pub enum RedisKey {
     Channel {
         id: Id<ChannelMarker>,
     },
-    GuildChannelId {
+    GuildChannel {
         guild_id: Id<GuildMarker>,
     },
     Emoji {
@@ -72,6 +72,19 @@ pub enum RedisKey {
     StageInstance {
         id: Id<StageMarker>,
     },
+    GuildStickerId {
+        guild_id: Id<GuildMarker>,
+    },
+    Sticker {
+        id: Id<StickerMarker>,
+    },
+    ChannelVoiceState {
+        channel_id: Id<ChannelMarker>,
+    },
+    VoiceState {
+        guild_id: Id<GuildMarker>,
+        user_id: Id<UserMarker>,
+    },
 }
 
 macro_rules! impl_from_id {
@@ -94,6 +107,7 @@ impl_from_id!(
     (Message, MessageMarker),
     (Role, RoleMarker),
     (StageInstance, StageMarker),
+    (Sticker, StickerMarker)
 );
 
 macro_rules! impl_from_two_id {
@@ -196,7 +210,7 @@ impl redis::ToRedisArgs for RedisKey {
         let key: KeyKind = match self {
             Self::CurrentUser => "CURRENT_USER".into(),
             Self::Channel { id } => ("CHANNEL", *id).into(),
-            Self::GuildChannelId { guild_id } => ("GUILD_CHANNEL_ID", *guild_id).into(),
+            Self::GuildChannel { guild_id } => ("GUILD_CHANNEL_ID", *guild_id).into(),
             Self::Emoji { id } => ("EMOJI", *id).into(),
             Self::GuildEmojiId { guild_id } => ("GUILD_EMOJI_ID", *guild_id).into(),
             Self::GuildIntegration { guild_id, id } => ("INTEGRATION", *guild_id, *id).into(),
@@ -216,9 +230,13 @@ impl redis::ToRedisArgs for RedisKey {
             Self::GuildRoleId { guild_id } => ("GUILD_ROLE_ID", *guild_id).into(),
             Self::Role { id } => ("ROLE", *id).into(),
             Self::GuildStageInstanceId { guild_id } => {
-                ("GUILD_STAGE_INSTANCE_STAGE_ID", *guild_id).into()
+                ("GUILD_STAGE_INSTANCE_ID", *guild_id).into()
             }
             Self::StageInstance { id } => ("STAGE_INSTANCE", *id).into(),
+            Self::GuildStickerId { guild_id } => ("GUILD_STICKER_ID", *guild_id).into(),
+            Self::Sticker { id } => ("STICKER", *id).into(),
+            Self::ChannelVoiceState { channel_id } => ("VOICE_STATE_USER", *channel_id).into(),
+            Self::VoiceState { guild_id, user_id } => ("VOICE_STATE", *guild_id, *user_id).into(),
         };
 
         let bytes: Vec<u8> = key.into();

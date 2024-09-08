@@ -107,8 +107,8 @@ impl PartialEq<Emoji> for CachedEmoji {
     }
 }
 
-crate::impl_to_cached_redis_arg_for_model!(CachedEmoji);
-crate::impl_from_cached_redis_value_for_model!(CachedEmoji);
+crate::cache::value::impl_to_bytes_for_model!(CachedEmoji);
+crate::cache::value::impl_from_bytes_for_model!(CachedEmoji);
 
 impl CacheableEmoji for CachedEmoji {}
 

@@ -1,7 +1,7 @@
 use redis::AsyncCommands;
 use twilight_model::id::Id;
 
-use super::{helper::IdAsyncIter, FromCachedRedisValue, Pipe};
+use super::{helper::AsyncIter, FromCachedRedisValue, Pipe, ToBytes};
 use crate::{cache::RedisKey, CacheStrategy, Connection, Error};
 
 /// Re-exported items for use in generated code by macros.
@@ -12,32 +12,37 @@ pub(crate) mod __export {
 
     pub use super::*;
     pub use crate::{
-        cache::{helper::IdAsyncIter, RedisKey},
+        cache::{helper::AsyncIter, RedisKey},
         CacheStrategy, Connection, Error,
     };
 }
 
-pub async fn scan<'a, 'stmt, VM>(
+pub async fn scan<'a, 'stmt, V: super::FromBytes>(
     conn: &'stmt mut Connection<'a>,
     key: RedisKey,
-) -> Result<IdAsyncIter<'stmt, VM>, Error> {
-    Ok(IdAsyncIter::new(conn.sscan(key).await?))
+) -> Result<AsyncIter<'stmt, V>, Error> {
+    Ok(AsyncIter::new(conn.sscan(key).await?))
 }
 
-pub async fn contains<'a, VM>(
+pub async fn contains<'a, VM: ToBytes>(
     conn: &mut Connection<'a>,
     key: RedisKey,
-    value: Id<VM>,
+    value: VM,
 ) -> Result<bool, Error> {
-    Ok(conn.sismember(key, value.get()).await?)
+    Ok(conn.sismember(key, value.to_bytes()?).await?)
 }
 
 pub async fn len<'a>(conn: &mut Connection<'a>, key: RedisKey) -> Result<usize, Error> {
     Ok(conn.scard(key).await?)
 }
 
-pub fn contains_with_pipe<S: CacheStrategy, VM>(pipe: &mut Pipe<S>, key: RedisKey, value: Id<VM>) {
-    pipe.0.sismember(key, value.get());
+pub fn contains_with_pipe<S, V>(pipe: &mut Pipe<S>, key: RedisKey, value: V) -> Result<(), Error>
+where
+    S: CacheStrategy,
+    V: ToBytes,
+{
+    pipe.0.sismember(key, value.to_bytes()?);
+    Ok(())
 }
 
 pub fn len_with_pipe<S: CacheStrategy>(pipe: &mut Pipe<S>, key: RedisKey) {
@@ -50,10 +55,10 @@ macro_rules! impl_set_wrapper_methods {
         $set_name:ident,
         key: {
             RedisKey::$redis_key:ident: {
-                $key_name:ident: Id<$key_id_marker:ty>
+                $key_name:ident: $key_id_type:ty
             }
         },
-        value: { $value_name:ident: Id<$value_id_marker:ty>}
+        value: { $value_name:ident: $value_id_type:ty }
     ) => {
         $crate::cache::cmd::__export::paste! {
         mod [<$set_name _set_wrapper_impl>] {
@@ -64,9 +69,9 @@ macro_rules! impl_set_wrapper_methods {
                 pub async fn [<scan_ $set_name>]<'a, 'stmt>(
                     &'a self,
                     conn: &'stmt mut Connection<'a>,
-                    $key_name: Id<$key_id_marker>,
+                    $key_name: $key_id_type,
                 ) -> Result<
-                    IdAsyncIter<'stmt, $value_id_marker>,
+                    AsyncIter<'stmt, $value_id_type>,
                     Error
                 > {
                     scan(
@@ -78,8 +83,8 @@ macro_rules! impl_set_wrapper_methods {
                 pub async fn [<$set_name _contains>](
                     &self,
                     conn: &mut Connection<'_>,
-                    $key_name: Id<$key_id_marker>,
-                    $value_name: Id<$value_id_marker>,
+                    $key_name: $key_id_type,
+                    $value_name: $value_id_type,
                 ) -> Result<bool, Error> {
                     contains(
                         conn,
@@ -91,7 +96,7 @@ macro_rules! impl_set_wrapper_methods {
                 pub async fn [<len_ $set_name>](
                     &self,
                     conn: &mut Connection<'_>,
-                    $key_name: Id<$key_id_marker>,
+                    $key_name: $key_id_type,
                 ) -> Result<usize, Error> {
                     len(
                         conn,
@@ -103,20 +108,20 @@ macro_rules! impl_set_wrapper_methods {
             impl<S: CacheStrategy> $crate::cache::Pipe<S> {
                 pub fn [<$set_name _contains>](
                     &mut self,
-                    $key_name: Id<$key_id_marker>,
-                    $value_name: Id<$value_id_marker>,
-                ) -> &mut Self {
+                    $key_name: $key_id_type,
+                    $value_name: $value_id_type,
+                ) -> Result<&mut Self, Error> {
                     contains_with_pipe(
                         self,
                         RedisKey::$redis_key { $key_name },
                         $value_name
-                    );
-                    self
+                    )?;
+                    Ok(self)
                 }
 
                 pub fn [<len_ $set_name>](
                     &mut self,
-                    $key_name: Id<$key_id_marker>,
+                    $key_name: $key_id_type,
                 ) -> &mut Self {
                     len_with_pipe(
                         self,
@@ -134,7 +139,7 @@ macro_rules! impl_global_set_wrapper_methods {
     (
         $set_name:ident,
         key: $redis_key:ident,
-        value: { $value_name:ident: Id<$value_id_marker:ty> }
+        value: { $value_name:ident: $value_id_marker:ty }
     ) => {
         $crate::cache::cmd::__export::paste! {
         mod [<$set_name _set_wrapper_impl>] {
@@ -145,7 +150,7 @@ macro_rules! impl_global_set_wrapper_methods {
                 pub async fn [<scan_ $set_name>]<'a, 'stmt>(
                     &'a mut self,
                     conn: &'stmt mut Connection<'a>,
-                ) -> Result<IdAsyncIter<'stmt, $value_id_marker>, Error> {
+                ) -> Result<AsyncIter<'stmt, $value_id_marker>, Error> {
                     scan(
                         conn,
                         RedisKey::$redis_key
@@ -155,7 +160,7 @@ macro_rules! impl_global_set_wrapper_methods {
                 pub async fn [<$set_name _contains>](
                     &mut self,
                     conn: &mut Connection<'_>,
-                    $value_name: Id<$value_id_marker>,
+                    $value_name: $value_id_marker,
                 ) -> Result<bool, Error> {
                     contains(
                         conn,
@@ -178,7 +183,7 @@ macro_rules! impl_global_set_wrapper_methods {
             impl<S: CacheStrategy> $crate::cache::Pipe<S> {
                 pub fn [<$set_name _contains>](
                     &mut self,
-                    $value_name: Id<$value_id_marker>,
+                    $value_name: $value_id_marker,
                 ) -> &mut Self {
                     contains_with_pipe(
                         self,
@@ -218,7 +223,7 @@ macro_rules! impl_str_wrapper_methods {
     (
         $get_name:ident,
         key: { $key_name:ident: Id<$key_id_marker:ty> },
-        value: $value_name:ident
+        value: $value_name:ty
     ) => {
         $crate::cache::cmd::__export::paste! {
         mod [< $get_name _str_wrapper_impl >] {
@@ -230,7 +235,7 @@ macro_rules! impl_str_wrapper_methods {
                     &self,
                     conn: &mut Connection<'_>,
                     $key_name: Id<$key_id_marker>,
-                ) -> Result<Option<S::$value_name>, Error> {
+                ) -> Result<Option<$value_name>, Error> {
                     get(conn, $key_name).await
                 }
             }
@@ -251,11 +256,11 @@ macro_rules! impl_str_wrapper_methods {
 macro_rules! impl_str_wrapper_methods_with_two_id {
     (
         $get_name:ident,
-        $id_name:ident,
-        $id2_name:ident,
-        $id_marker:ty,
-        $id2_marker:ty,
-        $value_name:ident
+        key: {
+            $id_name:ident: $id_marker:ty,
+            $id2_name:ident: $id2_marker:ty
+        },
+        value: $value_name:ident
     ) => {
         $crate::cache::cmd::__export::paste! {
         mod [< $get_name _str_wrapper_impl >] {

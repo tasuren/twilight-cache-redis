@@ -21,7 +21,9 @@ pub use bb8_redis;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("Failed to process the data by bincode.")]
+    #[error("User defined error is raised: {0}")]
+    User(#[from] anyhow::Error),
+    #[error("Failed to process data during bincode.")]
     Bincode(#[from] bincode::Error),
     #[error("Redis has raise error: {0}")]
     Redis(#[from] redis::RedisError),
@@ -91,7 +93,10 @@ pub trait UpdateCache<S: CacheStrategy>: private::Sealed {
 pub struct DefaultCacheConfig;
 
 impl CacheStrategy for DefaultCacheConfig {
+    type SerdeError = bincode::Error;
+
     type Channel = twilight_model::channel::Channel;
+    type ChannelVoiceState = model::CachedChannelVoiceState;
     type CurrentUser = twilight_model::user::CurrentUser;
     type Emoji = model::CachedEmoji;
     type Guild = model::CachedGuild;

@@ -4,7 +4,7 @@ use twilight_model::id::{
 };
 
 use crate::{
-    cache::{cmd, Pipe, RedisKey, ToCachedRedisArg},
+    cache::{cmd, Pipe, RedisKey, ToBytes},
     traits::CacheStrategy,
     Error,
 };
@@ -35,15 +35,12 @@ cmd::impl_global_set_wrapper_methods!(
 cmd::impl_str_wrapper_methods!(
     user,
     key: { user_id: Id<UserMarker> },
-    value: User
+    value: S::User
 );
 cmd::impl_str_wrapper_methods_with_two_id!(
     member,
-    guild_id,
-    user_id,
-    GuildMarker,
-    UserMarker,
-    Member
+    key: { guild_id: GuildMarker, user_id: UserMarker },
+    value: Member
 );
 
 impl<S: CacheStrategy> Pipe<S> {
@@ -73,7 +70,7 @@ impl<S: CacheStrategy> Pipe<S> {
         user_id: Id<UserMarker>,
         user: &S::User,
     ) -> Result<&mut Self, Error> {
-        self.0.set(RedisKey::from(user_id), user.to_redis_arg()?);
+        self.0.set(RedisKey::from(user_id), user.to_bytes()?);
         Ok(self)
     }
 
@@ -101,7 +98,7 @@ impl<S: CacheStrategy> Pipe<S> {
         member: &S::Member,
     ) -> Result<&mut Self, Error> {
         self.0
-            .set(RedisKey::from((guild_id, user_id)), member.to_redis_arg()?);
+            .set(RedisKey::from((guild_id, user_id)), member.to_bytes()?);
         Ok(self)
     }
 

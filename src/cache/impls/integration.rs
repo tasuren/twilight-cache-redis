@@ -4,7 +4,7 @@ use twilight_model::id::{
 };
 
 use crate::{
-    cache::{cmd, Pipe, RedisKey, ToCachedRedisArg},
+    cache::{cmd, Pipe, RedisKey, ToBytes},
     traits::CacheStrategy,
     Connection, Error,
 };
@@ -22,11 +22,8 @@ cmd::impl_set_wrapper_methods!(
 );
 cmd::impl_str_wrapper_methods_with_two_id!(
     guild_integration,
-    guild_id,
-    integration_id,
-    GuildMarker,
-    IntegrationMarker,
-    GuildIntegration
+    key: { guild_id: GuildMarker, integration_id: IntegrationMarker },
+    value: GuildIntegration
 );
 
 impl<S: CacheStrategy> Pipe<S> {
@@ -42,7 +39,7 @@ impl<S: CacheStrategy> Pipe<S> {
                 guild_id,
                 id: integration_id,
             },
-            integration.to_redis_arg()?,
+            integration.to_bytes()?,
         );
         Ok(self)
     }
@@ -63,7 +60,7 @@ impl<S: CacheStrategy> Pipe<S> {
                     guild_id,
                     id: integration_id,
                 },
-                integration.to_redis_arg()?,
+                integration.to_bytes()?,
             );
 
         Ok(self)

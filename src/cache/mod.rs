@@ -4,12 +4,17 @@ mod impls;
 mod key;
 pub mod value;
 
+use std::fmt::Debug;
+
+use redis::Value;
+use twilight_model::id::{marker::GuildMarker, Id};
+
 pub(crate) use self::pipe::Pipe;
 pub use self::{
     key::RedisKey,
-    value::{FromCachedRedisValue, ToCachedRedisArg},
+    value::{FromBytes, FromCachedRedisValue, ToBytes},
 };
-use crate::{Error, RedisCache};
+use crate::Error;
 
 pub mod pipe {
     use std::marker::PhantomData;
@@ -57,19 +62,59 @@ pub mod pipe {
     }
 }
 
-impl<S: crate::CacheStrategy> RedisCache<S> {
-    pub(crate) async fn remove<T: FromCachedRedisValue>(
-        &mut self,
-        key: RedisKey,
-    ) -> Result<Option<T>, Error> {
-        let mut pipe = redis::Pipeline::new();
-        let obj: (Option<redis::Value>,) = pipe
-            .get(key)
-            .del(key)
-            .ignore()
-            .query_async(&mut self.get_connection().await?)
-            .await?;
+pub struct WithGuildId<T> {
+    pub guild_id: Id<GuildMarker>,
+    pub resource: T,
+}
 
-        obj.0.as_ref().map(T::from_cached_redis_value).transpose()
+impl<T: ToBytes + FromBytes> WithGuildId<T> {
+    pub fn new(guild_id: Id<GuildMarker>, resource: T) -> Result<Self, ()> {
+        Ok(Self { guild_id, resource })
+    }
+
+    /// Make serialized `WithGuildId`.
+    pub fn to_bytes(guild_id: Id<GuildMarker>, resource: &T) -> Result<Vec<u8>, Error> {
+        let mut bytes = Vec::new();
+
+        bytes.extend_from_slice(&guild_id.get().to_be_bytes());
+        bytes.extend_from_slice(&resource.to_bytes()?);
+
+        Ok(bytes)
+    }
+}
+
+impl<T: Clone> Clone for WithGuildId<T> {
+    fn clone(&self) -> Self {
+        Self {
+            guild_id: self.guild_id,
+            resource: self.resource.clone(),
+        }
+    }
+}
+
+impl<T: Debug> Debug for WithGuildId<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("WithGuildId")
+            .field("guild_id", &self.guild_id)
+            .field("resource", &self.resource)
+            .finish()
+    }
+}
+
+impl<T: FromBytes> FromCachedRedisValue for WithGuildId<T> {
+    fn from_cached_redis_value(value: &redis::Value) -> Result<Self, Error> {
+        if let Value::BulkString(bytes) = value {
+            let mut guild_id: [u8; size_of::<u64>()] = [0; size_of::<u64>()];
+            guild_id.copy_from_slice(&bytes[..8]);
+            let guild_id = Id::new(u64::from_be_bytes(guild_id));
+            let resource = T::from_bytes(&bytes[8..])?;
+
+            Ok(Self { guild_id, resource })
+        } else {
+            Err(Error::Parse {
+                msg: "It is not `WithGuildId`.".to_owned(),
+                response: format!("{value:?}"),
+            })
+        }
     }
 }

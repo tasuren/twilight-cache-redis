@@ -46,13 +46,15 @@ use twilight_model::{
     voice::VoiceState,
 };
 
-use crate::{
-    cache::{FromCachedRedisValue, ToCachedRedisArg},
-    impl_from_cached_redis_value_for_model, impl_to_cached_redis_arg_for_model,
+use crate::cache::{
+    value::{impl_from_bytes_for_model, impl_to_bytes_for_model},
+    FromBytes, FromCachedRedisValue, ToBytes,
 };
 
 /// Super-trait for the generic cached representations of Discord API models.
 pub trait CacheStrategy: Send + Sync {
+    type SerdeError: std::error::Error;
+
     /// The cached [`Member`] model representation.
     type Member: CacheableMember;
     /// The cached [`Role`] model representation.
@@ -63,6 +65,8 @@ pub trait CacheStrategy: Send + Sync {
     type Guild: CacheableGuild;
     /// The cached [`VoiceState`] model representation.
     type VoiceState: CacheableVoiceState;
+    /// The cached user and guild ID pair.
+    type ChannelVoiceState: CacheableChannelVoiceState;
     /// The cached [`Message`] model representation.
     type Message: CacheableMessage;
     /// The cached [`CurrentUser`] model representation.
@@ -95,7 +99,7 @@ pub trait CacheableMember:
     + Serialize
     + DeserializeOwned
     + FromCachedRedisValue
-    + ToCachedRedisArg
+    + ToBytes
 {
     /// Roles of this member.
     fn roles(&self) -> &[Id<RoleMarker>];
@@ -128,8 +132,8 @@ pub trait CacheableRole:
     + Sync
     + Serialize
     + DeserializeOwned
-    + FromCachedRedisValue
-    + ToCachedRedisArg
+    + FromBytes
+    + ToBytes
 {
     /// Role's position in the guild roles.
     fn position(&self) -> i64;
@@ -142,8 +146,8 @@ pub trait CacheableRole:
     fn permissions(&self) -> Permissions;
 }
 
-impl_to_cached_redis_arg_for_model!(Role);
-impl_from_cached_redis_value_for_model!(Role);
+impl_to_bytes_for_model!(Role);
+impl_from_bytes_for_model!(Role);
 
 impl CacheableRole for Role {
     fn position(&self) -> i64 {
@@ -172,8 +176,8 @@ pub trait CacheableChannel:
     + Sync
     + Serialize
     + DeserializeOwned
-    + FromCachedRedisValue
-    + ToCachedRedisArg
+    + FromBytes
+    + ToBytes
 {
     /// ID of the guild this channel belongs to.
     fn guild_id(&self) -> Option<Id<GuildMarker>>;
@@ -196,8 +200,8 @@ pub trait CacheableChannel:
     fn set_last_pin_timestamp(&mut self, timestamp: Option<Timestamp>);
 }
 
-impl_to_cached_redis_arg_for_model!(Channel);
-impl_from_cached_redis_value_for_model!(Channel);
+impl_to_bytes_for_model!(Channel);
+impl_from_bytes_for_model!(Channel);
 
 impl CacheableChannel for Channel {
     fn guild_id(&self) -> Option<Id<GuildMarker>> {
@@ -238,8 +242,8 @@ pub trait CacheableGuild:
     + Sync
     + Serialize
     + DeserializeOwned
-    + FromCachedRedisValue
-    + ToCachedRedisArg
+    + FromBytes
+    + ToBytes
 {
     /// ID of the guild.
     fn id(&self) -> Id<GuildMarker>;
@@ -273,11 +277,26 @@ pub trait CacheableVoiceState:
     + Sync
     + Serialize
     + DeserializeOwned
-    + FromCachedRedisValue
-    + ToCachedRedisArg
+    + FromBytes
+    + ToBytes
 {
     /// ID of the channel this voice state belongs to.
     fn channel_id(&self) -> Id<ChannelMarker>;
+}
+
+/// Trait for a generic cached representation of a user and guild ID pair on voice channel.
+pub trait CacheableChannelVoiceState:
+    From<(Id<GuildMarker>, Id<UserMarker>)>
+    + PartialEq<Self>
+    + Clone
+    + Debug
+    + Send
+    + Sync
+    + Serialize
+    + DeserializeOwned
+    + FromBytes
+    + ToBytes
+{
 }
 
 /// Trait for a generic cached representation of a [`Message`].
@@ -291,8 +310,8 @@ pub trait CacheableMessage:
     + Sync
     + Serialize
     + DeserializeOwned
-    + FromCachedRedisValue
-    + ToCachedRedisArg
+    + FromBytes
+    + ToBytes
 {
     /// Update the cached data with a [`MessageUpdate`] event.
     fn update_with_message_update(&mut self, message_update: &MessageUpdate);
@@ -327,15 +346,15 @@ pub trait CacheableCurrentUser:
     + Sync
     + Serialize
     + DeserializeOwned
-    + FromCachedRedisValue
-    + ToCachedRedisArg
+    + FromBytes
+    + ToBytes
 {
     /// ID of the user.
     fn id(&self) -> Id<UserMarker>;
 }
 
-impl_to_cached_redis_arg_for_model!(CurrentUser);
-impl_from_cached_redis_value_for_model!(CurrentUser);
+impl_to_bytes_for_model!(CurrentUser);
+impl_from_bytes_for_model!(CurrentUser);
 
 impl CacheableCurrentUser for CurrentUser {
     fn id(&self) -> Id<UserMarker> {
@@ -354,8 +373,8 @@ pub trait CacheableSticker:
     + Sync
     + Serialize
     + DeserializeOwned
-    + FromCachedRedisValue
-    + ToCachedRedisArg
+    + FromBytes
+    + ToBytes
 {
     /// ID of the sticker.
     fn id(&self) -> Id<StickerMarker>;
@@ -372,8 +391,8 @@ pub trait CacheableEmoji:
     + Sync
     + Serialize
     + DeserializeOwned
-    + FromCachedRedisValue
-    + ToCachedRedisArg
+    + FromBytes
+    + ToBytes
 {
 }
 
@@ -388,13 +407,13 @@ pub trait CacheableGuildIntegration:
     + Sync
     + Serialize
     + DeserializeOwned
-    + FromCachedRedisValue
-    + ToCachedRedisArg
+    + FromBytes
+    + ToBytes
 {
 }
 
-impl_to_cached_redis_arg_for_model!(GuildIntegration);
-impl_from_cached_redis_value_for_model!(GuildIntegration);
+impl_to_bytes_for_model!(GuildIntegration);
+impl_from_bytes_for_model!(GuildIntegration);
 
 impl CacheableGuildIntegration for GuildIntegration {}
 
@@ -409,8 +428,8 @@ pub trait CacheablePresence:
     + Sync
     + Serialize
     + DeserializeOwned
-    + FromCachedRedisValue
-    + ToCachedRedisArg
+    + FromBytes
+    + ToBytes
 {
 }
 
@@ -425,13 +444,13 @@ pub trait CacheableStageInstance:
     + Sync
     + Serialize
     + DeserializeOwned
-    + FromCachedRedisValue
-    + ToCachedRedisArg
+    + FromBytes
+    + ToBytes
 {
 }
 
-impl_to_cached_redis_arg_for_model!(StageInstance);
-impl_from_cached_redis_value_for_model!(StageInstance);
+impl_to_bytes_for_model!(StageInstance);
+impl_from_bytes_for_model!(StageInstance);
 
 impl CacheableStageInstance for StageInstance {}
 
@@ -446,12 +465,12 @@ pub trait CacheableUser:
     + Sync
     + Serialize
     + DeserializeOwned
-    + FromCachedRedisValue
-    + ToCachedRedisArg
+    + FromBytes
+    + ToBytes
 {
 }
 
-impl_to_cached_redis_arg_for_model!(User);
-impl_from_cached_redis_value_for_model!(User);
+impl_to_bytes_for_model!(User);
+impl_from_bytes_for_model!(User);
 
 impl CacheableUser for User {}

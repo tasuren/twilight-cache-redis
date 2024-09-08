@@ -7,7 +7,7 @@ use twilight_model::id::{
 };
 
 use crate::{
-    cache::{cmd, FromCachedRedisValue, Pipe, RedisKey, ToCachedRedisArg},
+    cache::{cmd, FromCachedRedisValue, Pipe, RedisKey, ToBytes},
     CacheStrategy, Connection, Error, RedisCache,
 };
 
@@ -67,7 +67,7 @@ impl<S: CacheStrategy> Pipe<S> {
 cmd::impl_str_wrapper_methods!(
     message,
     key: { message_id: Id<MessageMarker> },
-    value: Message
+    value: S::Message
 );
 
 impl<S: CacheStrategy> Pipe<S> {
@@ -104,8 +104,7 @@ impl<S: CacheStrategy> Pipe<S> {
         message_id: Id<MessageMarker>,
         message: &S::Message,
     ) -> Result<&mut Self, Error> {
-        self.0
-            .set(RedisKey::from(message_id), message.to_redis_arg()?);
+        self.0.set(RedisKey::from(message_id), message.to_bytes()?);
 
         Ok(self)
     }

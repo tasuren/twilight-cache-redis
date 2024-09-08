@@ -4,7 +4,7 @@ use twilight_model::id::{
 };
 
 use crate::{
-    cache::{cmd, helper::*, Pipe, RedisKey},
+    cache::{cmd, helper::*, Pipe, RedisKey, WithGuildId},
     traits::CacheStrategy,
     Error,
 };
@@ -23,7 +23,7 @@ cmd::impl_set_wrapper_methods!(
 cmd::impl_str_wrapper_methods!(
     emoji,
     key: { emoji_id: Id<EmojiMarker> },
-    value: Emoji
+    value: WithGuildId<S::Emoji>
 );
 
 impl<S: CacheStrategy> Pipe<S> {

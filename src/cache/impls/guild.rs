@@ -1,7 +1,7 @@
 use twilight_model::id::{marker::GuildMarker, Id};
 
 use crate::{
-    cache::{cmd, Pipe, RedisKey, ToCachedRedisArg},
+    cache::{cmd, Pipe, RedisKey, ToBytes},
     traits::CacheStrategy,
     Error,
 };
@@ -19,7 +19,7 @@ cmd::impl_global_set_wrapper_methods!(
 cmd::impl_str_wrapper_methods!(
     guild,
     key: { guild_id: Id<GuildMarker> },
-    value: Guild
+    value: S::Guild
 );
 
 impl<S: CacheStrategy> Pipe<S> {
@@ -43,7 +43,7 @@ impl<S: CacheStrategy> Pipe<S> {
         guild_id: Id<GuildMarker>,
         guild: &S::Guild,
     ) -> Result<&mut Self, Error> {
-        self.0.set(RedisKey::from(guild_id), guild.to_redis_arg()?);
+        self.0.set(RedisKey::from(guild_id), guild.to_bytes()?);
 
         Ok(self)
     }

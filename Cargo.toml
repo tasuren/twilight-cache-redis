@@ -23,6 +23,7 @@ thiserror = "1.0.63"
 trait-variant = "0.1.2"
 seq-macro = "0.3.5"
 atoi = "2.0.0"
+anyhow = "1.0.87"
 
 [dev-dependencies]
 static_assertions = "1.1.0"

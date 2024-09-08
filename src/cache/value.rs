@@ -1,24 +1,28 @@
 use std::collections::VecDeque;
 
 use atoi::atoi;
-use redis::{FromRedisValue, Value};
-use serde::de::DeserializeOwned;
+use redis::{FromRedisValue, ToRedisArgs, Value};
 
 use twilight_model::id::Id;
 
 use crate::Error;
 
+pub trait FromBytes: Sized {
+    fn from_bytes(raw: &[u8]) -> Result<Self, Error>;
+}
 pub trait FromCachedRedisValue: Sized {
     fn from_cached_redis_value(value: &Value) -> Result<Self, Error>;
 }
 
-pub(crate) fn deserialize_single<T: DeserializeOwned>(value: &Value) -> Result<T, Error> {
-    match value {
-        Value::BulkString(data) => Ok(bincode::deserialize(data)?),
-        _ => Err(Error::Parse {
-            msg: "The value is not bytes.".to_owned(),
-            response: format!("{value:?}"),
-        }),
+impl<T: FromBytes> FromCachedRedisValue for T {
+    fn from_cached_redis_value(value: &Value) -> Result<Self, Error> {
+        match value {
+            Value::BulkString(data) => Ok(T::from_bytes(data)?),
+            _ => Err(Error::Parse {
+                msg: "The value is not bytes.".to_owned(),
+                response: format!("{value:?}"),
+            }),
+        }
     }
 }
 
@@ -53,38 +57,32 @@ impl<T: FromCachedRedisValue> FromCachedRedisValue for Option<T> {
     }
 }
 
+/// Implement `FromBytes` for the given models that implement `serde::Deserialize`.
+///
+/// # Notes
+/// This macro uses bincode crate to deserialize the data.
 #[macro_export]
-macro_rules! impl_from_cached_redis_value_for_model {
+macro_rules! __impl_from_bytes_for_model {
     ($($model:ty),*) => {
         $(
-            impl $crate::cache::FromCachedRedisValue for $model {
-                fn from_cached_redis_value(value: &redis::Value) -> Result<Self, $crate::Error> {
-                    $crate::cache::value::deserialize_single(&value)
+            impl $crate::cache::value::FromBytes for $model {
+                fn from_bytes(data: &[u8]) -> Result<Self, $crate::Error> {
+                    Ok(::bincode::deserialize(data)?)
                 }
             }
         )*
     };
 }
 
-pub use impl_from_cached_redis_value_for_model;
+pub use __impl_from_bytes_for_model as impl_from_bytes_for_model;
 
-fn id_from_bytes<M>(raw: &[u8]) -> Result<Id<M>, Error> {
-    let n = atoi(raw).ok_or_else(|| Error::Parse {
-        msg: "Failed to parse ID.".to_owned(),
-        response: format!("{raw:?}"),
-    })?;
-    Ok(Id::new(n))
-}
-
-impl<M> FromCachedRedisValue for Id<M> {
-    fn from_cached_redis_value(value: &Value) -> Result<Id<M>, Error> {
-        match value {
-            Value::BulkString(raw) => id_from_bytes(raw),
-            _ => Err(Error::Parse {
-                msg: "The value is not an integer.".to_owned(),
-                response: format!("{value:?}"),
-            }),
-        }
+impl<M> FromBytes for Id<M> {
+    fn from_bytes(raw: &[u8]) -> Result<Self, Error> {
+        let n = atoi(raw).ok_or_else(|| Error::Parse {
+            msg: "Failed to parse ID.".to_owned(),
+            response: format!("{raw:?}"),
+        })?;
+        Ok(Id::new(n))
     }
 }
 
@@ -150,19 +148,31 @@ seq_macro::seq!(I in 0..16 {
     impl_drv_for_tuple!(I);
 });
 
-pub trait ToCachedRedisArg {
-    fn to_redis_arg(&self) -> Result<Vec<u8>, Error>;
+pub trait ToBytes {
+    fn to_bytes(&self) -> Result<Vec<u8>, Error>;
 }
 
+/// Implement `ToBytes` for the given models that implement `serde::Serialize`.
+///
+/// # Notes
+/// This macro uses bincode crate to serialize the data.
 #[macro_export]
-macro_rules! impl_to_cached_redis_arg_for_model {
+macro_rules! __impl_to_bytes_for_model {
     ($($model:ty),*) => {
         $(
-            impl $crate::cache::ToCachedRedisArg for $model {
-                fn to_redis_arg(&self) -> Result<Vec<u8>, $crate::Error> {
+            impl $crate::cache::ToBytes for $model {
+                fn to_bytes(&self) -> Result<Vec<u8>, $crate::Error> {
                     Ok(::bincode::serialize(self)?)
                 }
             }
         )*
     };
+}
+
+pub use __impl_to_bytes_for_model as impl_to_bytes_for_model;
+
+impl<M> ToBytes for Id<M> {
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.get().to_redis_args().remove(0))
+    }
 }

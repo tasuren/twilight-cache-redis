@@ -19,7 +19,8 @@ pub async fn cache_emojis<S: CacheStrategy>(
     let mut removal_emoji_ids = Vec::new();
     let additional_emojis = {
         let mut iter = cache.scan_guild_emoji_ids(&mut conn, guild_id).await?;
-        while let Some(emoji_id) = iter.next_item().await {
+
+        while let Some(emoji_id) = iter.next_item().await? {
             if let Some(i) = incoming.iter().position(|e| e.id == emoji_id) {
                 incoming.remove(i);
             } else {

@@ -412,8 +412,8 @@ impl PartialEq<Message> for CachedMessage {
     }
 }
 
-crate::impl_to_cached_redis_arg_for_model!(CachedMessage);
-crate::impl_from_cached_redis_value_for_model!(CachedMessage);
+crate::cache::value::impl_to_bytes_for_model!(CachedMessage);
+crate::cache::value::impl_from_bytes_for_model!(CachedMessage);
 
 impl CacheableMessage for CachedMessage {
     fn update_with_message_update(&mut self, message_update: &MessageUpdate) {

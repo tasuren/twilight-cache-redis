@@ -1,6 +1,10 @@
 use twilight_model::{
     channel::Channel,
     gateway::payload::incoming::{ChannelCreate, ChannelDelete, ChannelUpdate},
+    id::{
+        marker::{ChannelMarker, GuildMarker},
+        Id,
+    },
 };
 
 use crate::{
@@ -17,10 +21,22 @@ pub fn cache_channel_model<S: CacheStrategy>(
 
 pub fn cache_channel<S: CacheStrategy>(pipe: &mut Pipe<S>, channel: Channel) -> Result<(), Error> {
     if let Some(guild_id) = channel.guild_id {
-        pipe.add_guild_channel_id(guild_id, channel.id);
+        pipe.add_guild_channel(guild_id, channel.id);
     }
 
     cache_channel_model(pipe, channel)
+}
+
+pub fn uncache_channel<S: CacheStrategy>(
+    pipe: &mut Pipe<S>,
+    guild_id: Option<Id<GuildMarker>>,
+    channel_id: Id<ChannelMarker>,
+) {
+    if let Some(guild_id) = guild_id {
+        pipe.remove_guild_channel(guild_id, channel_id);
+    }
+
+    pipe.delete_channel(channel_id);
 }
 
 impl<S: CacheStrategy> UpdateCache<S> for ChannelCreate {
@@ -46,11 +62,7 @@ impl<S: CacheStrategy> UpdateCache<S> for ChannelUpdate {
 impl<S: CacheStrategy> UpdateCache<S> for ChannelDelete {
     async fn update(&self, cache: &mut RedisCache<S>, pipe: &mut Pipe<S>) -> Result<(), Error> {
         if cache.wants(ResourceType::CHANNEL) {
-            if let Some(guild_id) = self.guild_id {
-                pipe.remove_guild_channel_id(guild_id, self.id);
-            }
-
-            pipe.delete_channel(self.id);
+            uncache_channel(pipe, self.guild_id, self.id);
 
             Ok(())
         } else {

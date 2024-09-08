@@ -14,7 +14,11 @@ pub fn cache_stage_instance<S: CacheStrategy>(
     stage_instance: StageInstance,
 ) -> Result<(), Error> {
     pipe.add_guild_stage_instance_id(stage_instance.guild_id, stage_instance.id)
-        .set_stage_instance(stage_instance.id, &S::StageInstance::from(stage_instance))?;
+        .set_stage_instance(
+            stage_instance.guild_id,
+            stage_instance.id,
+            &S::StageInstance::from(stage_instance),
+        )?;
     Ok(())
 }
 
