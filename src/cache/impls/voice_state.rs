@@ -9,17 +9,31 @@ use crate::{
 };
 
 cmd::impl_set_wrapper_methods!(
-    voice_state_user,
+    channel_voice_states,
     key: {
-        RedisKey::ChannelVoiceState: {
+        RedisKey::ChannelVoiceStates: {
             channel_id: Id<ChannelMarker>
         }
     },
     value: { user: S::ChannelVoiceState }
 );
-cmd::impl_str_wrapper_methods!(
+cmd::impl_set_wrapper_methods!(
+    guild_voice_states,
+    key: {
+        RedisKey::GuildVoiceStates: {
+            guild_id: Id<GuildMarker>
+        }
+    },
+    value: { user_id: Id<UserMarker> }
+);
+cmd::impl_str_wrapper_methods_with_two_id!(
     voice_state,
-    key: { channel_id: Id<ChannelMarker> },
+    key: {
+        RedisKey::VoiceState: {
+            guild_id: Id<GuildMarker>,
+            user_id: Id<UserMarker>
+        }
+    },
     value: S::VoiceState
 );
 
@@ -29,21 +43,47 @@ impl<S: CacheStrategy> Pipe<S> {
         channel_id: Id<ChannelMarker>,
         user: &S::ChannelVoiceState,
     ) -> Result<&mut Self, Error> {
-        self.0
-            .sadd(RedisKey::ChannelVoiceState { channel_id }, user.to_bytes()?);
+        self.0.sadd(
+            RedisKey::ChannelVoiceStates { channel_id },
+            user.to_bytes()?,
+        );
 
         Ok(self)
     }
 
-    pub(crate) fn remove_voice_state_user(
+    pub(crate) fn remove_channel_voice_state(
         &mut self,
         channel_id: Id<ChannelMarker>,
         user: &S::ChannelVoiceState,
     ) -> Result<&mut Self, Error> {
-        self.0
-            .srem(RedisKey::ChannelVoiceState { channel_id }, user.to_bytes()?);
+        self.0.srem(
+            RedisKey::ChannelVoiceStates { channel_id },
+            user.to_bytes()?,
+        );
 
         Ok(self)
+    }
+
+    pub(crate) fn add_guild_voice_state(
+        &mut self,
+        guild_id: Id<GuildMarker>,
+        user_id: Id<UserMarker>,
+    ) -> &mut Self {
+        self.0
+            .sadd(RedisKey::GuildVoiceStates { guild_id }, user_id.get());
+
+        self
+    }
+
+    pub(crate) fn remove_guild_voice_state(
+        &mut self,
+        guild_id: Id<GuildMarker>,
+        user_id: Id<UserMarker>,
+    ) -> &mut Self {
+        self.0
+            .srem(RedisKey::GuildVoiceStates { guild_id }, user_id.get());
+
+        self
     }
 
     pub(crate) fn set_voice_state(

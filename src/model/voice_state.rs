@@ -151,8 +151,8 @@ impl PartialEq<VoiceState> for CachedVoiceState {
     }
 }
 
-crate::impl_to_cached_redis_arg_for_model!(CachedVoiceState);
-crate::impl_from_cached_redis_value_for_model!(CachedVoiceState);
+crate::cache::value::impl_to_bytes_for_model!(CachedVoiceState);
+crate::cache::value::impl_from_bytes_for_model!(CachedVoiceState);
 
 impl CacheableVoiceState for CachedVoiceState {
     fn channel_id(&self) -> Id<ChannelMarker> {
