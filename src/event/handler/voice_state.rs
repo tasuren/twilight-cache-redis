@@ -1,9 +1,6 @@
 use twilight_model::{
     gateway::payload::incoming::VoiceStateUpdate,
-    id::{
-        marker::{ChannelMarker, GuildMarker},
-        Id,
-    },
+    id::{marker::GuildMarker, Id},
     voice::VoiceState,
 };
 
