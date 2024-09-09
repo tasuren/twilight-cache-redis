@@ -22,7 +22,12 @@ cmd::impl_set_wrapper_methods!(
 );
 cmd::impl_str_wrapper_methods_with_two_id!(
     guild_integration,
-    key: { guild_id: GuildMarker, integration_id: IntegrationMarker },
+    key: {
+        RedisKey::Integration: {
+            guild_id: Id<GuildMarker>,
+            integration_id: Id<IntegrationMarker>
+        }
+    },
     value: S::GuildIntegration
 );
 
@@ -61,7 +66,7 @@ impl<S: CacheStrategy> Pipe<S> {
         self.0.set(
             RedisKey::Integration {
                 guild_id,
-                id: integration_id,
+                integration_id,
             },
             integration.to_bytes()?,
         );
@@ -76,7 +81,7 @@ impl<S: CacheStrategy> Pipe<S> {
     ) -> &mut Self {
         self.0.del(RedisKey::Integration {
             guild_id,
-            id: integration_id,
+            integration_id,
         });
 
         self

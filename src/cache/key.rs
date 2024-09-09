@@ -23,7 +23,7 @@ pub enum RedisKey {
     },
     Integration {
         guild_id: Id<GuildMarker>,
-        id: Id<IntegrationMarker>,
+        integration_id: Id<IntegrationMarker>,
     },
     GuildIntegrations {
         guild_id: Id<GuildMarker>,
@@ -37,7 +37,7 @@ pub enum RedisKey {
     },
     Member {
         guild_id: Id<GuildMarker>,
-        id: Id<UserMarker>,
+        user_id: Id<UserMarker>,
     },
     GuildMembers {
         guild_id: Id<GuildMarker>,
@@ -78,8 +78,11 @@ pub enum RedisKey {
     Sticker {
         id: Id<StickerMarker>,
     },
-    ChannelVoiceState {
+    ChannelVoiceStates {
         channel_id: Id<ChannelMarker>,
+    },
+    GuildVoiceStates {
+        guild_id: Id<GuildMarker>,
     },
     VoiceState {
         guild_id: Id<GuildMarker>,
@@ -132,11 +135,11 @@ macro_rules! impl_from_two_id {
 impl_from_two_id!(
     (Integration, {
         guild_id: GuildMarker,
-        id: IntegrationMarker
+        integration_id: IntegrationMarker
     }),
     (Member, {
         guild_id: GuildMarker,
-        id: UserMarker
+        user_id: UserMarker
     }),
 );
 
@@ -213,12 +216,15 @@ impl redis::ToRedisArgs for RedisKey {
             Self::GuildChannels { guild_id } => ("GUILD_CHANNELS", *guild_id).into(),
             Self::Emoji { id } => ("EMOJI", *id).into(),
             Self::GuildEmojis { guild_id } => ("GUILD_EMOJIS", *guild_id).into(),
-            Self::Integration { guild_id, id } => ("INTEGRATION", *guild_id, *id).into(),
+            Self::Integration {
+                guild_id,
+                integration_id,
+            } => ("INTEGRATION", *guild_id, *integration_id).into(),
             Self::GuildIntegrations { guild_id } => ("GUILD_INTEGRATIONS", *guild_id).into(),
             Self::User { id } => ("USER", *id).into(),
             Self::Users => "USERS".into(),
             Self::UserGuilds { user_id } => ("USER_GUILDS", *user_id).into(),
-            Self::Member { guild_id, id } => ("MEMBER", *guild_id, *id).into(),
+            Self::Member { guild_id, user_id } => ("MEMBER", *guild_id, *user_id).into(),
             Self::GuildMembers { guild_id } => ("GUILD_MEMBERS", *guild_id).into(),
             Self::UnavailableGuilds => "UNAVAILABLE_GUILDS".into(),
             Self::Guild { id } => ("GUILD", *id).into(),
@@ -233,7 +239,8 @@ impl redis::ToRedisArgs for RedisKey {
             Self::StageInstance { id } => ("STAGE_INSTANCE", *id).into(),
             Self::GuildStickers { guild_id } => ("GUILD_STICKERS", *guild_id).into(),
             Self::Sticker { id } => ("STICKER", *id).into(),
-            Self::ChannelVoiceState { channel_id } => ("VOICE_STATE_USER", *channel_id).into(),
+            Self::ChannelVoiceStates { channel_id } => ("CHANNEL_VOICE_STATES", *channel_id).into(),
+            Self::GuildVoiceStates { guild_id } => ("GUILD_VOICE_STATES", *guild_id).into(),
             Self::VoiceState { guild_id, user_id } => ("VOICE_STATE", *guild_id, *user_id).into(),
         };
 

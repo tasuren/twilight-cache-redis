@@ -39,7 +39,12 @@ cmd::impl_str_wrapper_methods!(
 );
 cmd::impl_str_wrapper_methods_with_two_id!(
     member,
-    key: { guild_id: GuildMarker, user_id: UserMarker },
+    key: {
+        RedisKey::Member: {
+            guild_id: Id<GuildMarker>,
+            user_id: Id<UserMarker>
+        }
+    },
     value: S::Member
 );
 

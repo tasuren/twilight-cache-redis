@@ -15,6 +15,7 @@ mod role;
 mod stage_instance;
 mod sticker;
 mod thread;
+mod voice_state;
 
 impl<S: CacheStrategy> UpdateCache<S> for Ready {
     async fn update(&self, cache: &mut RedisCache<S>, pipe: &mut Pipe<S>) -> Result<(), Error> {

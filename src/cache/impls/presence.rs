@@ -19,7 +19,12 @@ cmd::impl_set_wrapper_methods!(
 );
 cmd::impl_str_wrapper_methods_with_two_id!(
     presence,
-    key: { guild_id: GuildMarker, user_id: UserMarker },
+    key: {
+        RedisKey::Presence: {
+            guild_id: Id<GuildMarker>,
+            user_id: Id<UserMarker>
+        }
+    },
     value: S::Presence
 );
 

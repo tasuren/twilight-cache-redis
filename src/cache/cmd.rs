@@ -222,7 +222,7 @@ pub fn get_with_pipe<S: CacheStrategy>(pipe: &mut Pipe<S>, key: impl Into<RedisK
 macro_rules! impl_str_wrapper_methods {
     (
         $get_name:ident,
-        key: { $key_name:ident: Id<$key_id_marker:ty> },
+        key: { $key_name:ident: $key_id_marker:ty },
         value: $value_name:ty
     ) => {
         $crate::cache::cmd::__export::paste! {
@@ -234,7 +234,7 @@ macro_rules! impl_str_wrapper_methods {
                 pub async fn [<get_ $get_name>](
                     &self,
                     conn: &mut Connection<'_>,
-                    $key_name: Id<$key_id_marker>,
+                    $key_name: $key_id_marker,
                 ) -> Result<Option<$value_name>, Error> {
                     get(conn, $key_name).await
                 }
@@ -243,7 +243,7 @@ macro_rules! impl_str_wrapper_methods {
             impl<S: CacheStrategy> $crate::cache::Pipe<S> {
                 pub fn [<get_ $get_name>](
                     &mut self,
-                    $key_name: Id<$key_id_marker>,
+                    $key_name: $key_id_marker,
                 ) -> &mut Self {
                     get_with_pipe(self, $key_name);
                     self
@@ -257,8 +257,10 @@ macro_rules! impl_str_wrapper_methods_with_two_id {
     (
         $get_name:ident,
         key: {
-            $id_name:ident: $id_marker:ty,
-            $id2_name:ident: $id2_marker:ty
+            RedisKey::$redis_key:ident: {
+                $id_name:ident: $id_type:ty,
+                $id2_name:ident: $id2_type:ty
+            }
         },
         value: $value_type:ty
     ) => {
@@ -271,20 +273,32 @@ macro_rules! impl_str_wrapper_methods_with_two_id {
                 pub async fn [<get_ $get_name>](
                     &self,
                     conn: &mut Connection<'_>,
-                    $id_name: Id<$id_marker>,
-                    $id2_name: Id<$id2_marker>
+                    $id_name: $id_type,
+                    $id2_name: $id2_type
                 ) -> Result<Option<$value_type>, Error> {
-                    get(conn, ($id_name, $id2_name)).await
+                    get(
+                        conn,
+                        RedisKey::$redis_key {
+                            $id_name,
+                            $id2_name
+                        }
+                    ).await
                 }
             }
 
             impl<S: CacheStrategy> $crate::cache::Pipe<S> {
                 pub fn [<get_ $get_name>](
                     &mut self,
-                    $id_name: Id<$id_marker>,
-                    $id2_name: Id<$id2_marker>
+                    $id_name: $id_type,
+                    $id2_name: $id2_type
                 ) -> &mut Self {
-                    get_with_pipe(self, ($id_name, $id2_name));
+                    get_with_pipe(
+                        self,
+                        RedisKey::$redis_key {
+                            $id_name,
+                            $id2_name
+                        }
+                    );
                     self
                 }
             }
