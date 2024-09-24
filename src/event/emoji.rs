@@ -1,13 +1,25 @@
 use twilight_model::{
     gateway::payload::incoming::GuildEmojisUpdate,
     guild::Emoji,
-    id::{marker::GuildMarker, Id},
+    id::{
+        marker::{EmojiMarker, GuildMarker},
+        Id,
+    },
 };
 
 use crate::{
     cache::Pipe, config::ResourceType, event::user::cache_user, traits::CacheStrategy, Error,
     RedisCache, UpdateCache,
 };
+
+pub fn uncache_emoji<S: CacheStrategy>(
+    pipe: &mut Pipe<S>,
+    guild_id: Id<GuildMarker>,
+    emoji_id: Id<EmojiMarker>,
+) {
+    pipe.remove_guild_emoji(guild_id, emoji_id)
+        .delete_emoji(emoji_id);
+}
 
 pub async fn cache_emojis<S: CacheStrategy>(
     cache: &mut RedisCache<S>,
@@ -51,7 +63,7 @@ pub async fn cache_emojis<S: CacheStrategy>(
     }
 
     if !removal_emoji_ids.is_empty() {
-        pipe.remove_guild_emoji(guild_id, &removal_emoji_ids);
+        pipe.remove_guild_emojis(guild_id, &removal_emoji_ids);
         pipe.delete_emojis(removal_emoji_ids.iter().copied());
     }
 

@@ -1,6 +1,9 @@
 use twilight_model::{
     gateway::payload::incoming::VoiceStateUpdate,
-    id::{marker::GuildMarker, Id},
+    id::{
+        marker::{ChannelMarker, GuildMarker, UserMarker},
+        Id,
+    },
     voice::VoiceState,
 };
 
@@ -8,6 +11,20 @@ use crate::{
     cache::Pipe, config::ResourceType, traits::CacheableVoiceState, CacheStrategy, Connection,
     Error, UpdateCache,
 };
+
+pub(crate) fn set_voice_state_cache<S: CacheStrategy>(
+    pipe: &mut Pipe<S>,
+    guild_id: Id<GuildMarker>,
+    channel_id: Id<ChannelMarker>,
+    user_id: Id<UserMarker>,
+    voice_state: &S::VoiceState,
+) -> Result<(), Error> {
+    pipe.set_voice_state(guild_id, user_id, voice_state)?
+        .add_guild_voice_state(guild_id, user_id)
+        .add_channel_voice_state(channel_id, &S::ChannelVoiceState::from((guild_id, user_id)))?;
+
+    Ok(())
+}
 
 pub(crate) async fn cache_voice_state<S: CacheStrategy>(
     conn: &mut Connection<'_>,
@@ -19,7 +36,7 @@ pub(crate) async fn cache_voice_state<S: CacheStrategy>(
 
     // Check if the user is switching channels.
     // If they are, remove them from the old channel.
-    let already_voice_state: Option<S::VoiceState> = Pipe::<S>::new()
+    let (already_voice_state,): (Option<S::VoiceState>,) = Pipe::<S>::new()
         .get_voice_state(guild_id, user_id)
         .query(conn)
         .await?;
@@ -33,14 +50,9 @@ pub(crate) async fn cache_voice_state<S: CacheStrategy>(
 
     if let Some(channel_id) = voice_state.channel_id {
         // Cache the new voice state.
-        let voice_state = S::VoiceState::from((channel_id, guild_id, voice_state));
+        let voice_state = S::VoiceState::from((guild_id, channel_id, voice_state));
 
-        pipe.set_voice_state(guild_id, user_id, &voice_state)?
-            .add_guild_voice_state(guild_id, user_id)
-            .add_channel_voice_state(
-                channel_id,
-                &S::ChannelVoiceState::from((guild_id, user_id)),
-            )?;
+        set_voice_state_cache(pipe, guild_id, channel_id, user_id, &voice_state)?;
     } else {
         // This user is not in a voice channel so remove the cache.
         pipe.remove_guild_voice_state(guild_id, user_id)

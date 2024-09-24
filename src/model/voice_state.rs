@@ -92,9 +92,9 @@ impl CachedVoiceState {
     }
 }
 
-impl From<(Id<ChannelMarker>, Id<GuildMarker>, VoiceState)> for CachedVoiceState {
+impl From<(Id<GuildMarker>, Id<ChannelMarker>, VoiceState)> for CachedVoiceState {
     fn from(
-        (channel_id, guild_id, voice_state): (Id<ChannelMarker>, Id<GuildMarker>, VoiceState),
+        (guild_id, channel_id, voice_state): (Id<GuildMarker>, Id<ChannelMarker>, VoiceState),
     ) -> Self {
         // Reasons for dropping fields:
         //

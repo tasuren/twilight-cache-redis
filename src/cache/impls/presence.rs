@@ -39,6 +39,16 @@ impl<S: CacheStrategy> Pipe<S> {
         self
     }
 
+    pub(crate) fn remove_guild_presence(
+        &mut self,
+        guild_id: Id<GuildMarker>,
+        user_id: Id<UserMarker>,
+    ) -> &mut Self {
+        self.0
+            .srem(RedisKey::GuildPresences { guild_id }, user_id.get());
+        self
+    }
+
     pub(crate) fn set_presence(
         &mut self,
         guild_id: Id<GuildMarker>,
@@ -50,5 +60,14 @@ impl<S: CacheStrategy> Pipe<S> {
             presence.to_bytes()?,
         );
         Ok(self)
+    }
+
+    pub(crate) fn delete_presence(
+        &mut self,
+        guild_id: Id<GuildMarker>,
+        user_id: Id<UserMarker>,
+    ) -> &mut Self {
+        self.0.del(RedisKey::Presence { guild_id, user_id });
+        self
     }
 }

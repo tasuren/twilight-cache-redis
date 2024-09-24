@@ -11,7 +11,7 @@ use crate::{
     cache::Pipe, config::ResourceType, traits::CacheStrategy, Error, RedisCache, UpdateCache,
 };
 
-pub fn cache_channel_model<S: CacheStrategy>(
+fn cache_channel_model<S: CacheStrategy>(
     pipe: &mut Pipe<S>,
     channel: Channel,
 ) -> Result<(), Error> {

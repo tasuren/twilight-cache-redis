@@ -127,7 +127,7 @@ impl<S: CacheStrategy> UpdateCache<S> for MemberRemove {
         }
 
         if cache.wants(ResourceType::USER) {
-            user::uncached_user(pipe, self.user.id, self.guild_id);
+            user::uncache_user(pipe, self.user.id, self.guild_id);
         }
 
         if cache.wants(ResourceType::MEMBER) {

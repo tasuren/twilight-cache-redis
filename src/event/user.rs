@@ -23,7 +23,7 @@ pub fn cache_user<S: CacheStrategy>(
     Ok(())
 }
 
-pub fn uncached_user<S: CacheStrategy>(
+pub fn uncache_user<S: CacheStrategy>(
     pipe: &mut Pipe<S>,
     user_id: Id<UserMarker>,
     guild_id: Id<GuildMarker>,

@@ -19,7 +19,7 @@ use crate::Error;
 pub mod pipe {
     use std::marker::PhantomData;
 
-    use redis::{Pipeline, ToRedisArgs, Value};
+    use redis::{Pipeline, Value};
 
     use crate::{CacheStrategy, Error};
 
@@ -38,11 +38,6 @@ pub mod pipe {
 
         pub fn atomic(&mut self) -> &mut Self {
             self.0.atomic();
-            self
-        }
-
-        pub(crate) fn arg<T: ToRedisArgs>(&mut self, t: T) -> &mut Self {
-            self.0.arg(t);
             self
         }
 

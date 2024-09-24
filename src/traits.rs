@@ -268,7 +268,7 @@ pub trait CacheableGuild:
 
 /// Trait for a generic cached representation of a [`VoiceState`].
 pub trait CacheableVoiceState:
-    From<(Id<ChannelMarker>, Id<GuildMarker>, VoiceState)>
+    From<(Id<GuildMarker>, Id<ChannelMarker>, VoiceState)>
     + PartialEq<VoiceState>
     + PartialEq<Self>
     + Clone

@@ -42,6 +42,16 @@ impl<S: CacheStrategy> Pipe<S> {
     pub(crate) fn remove_guild_emoji(
         &mut self,
         guild_id: Id<GuildMarker>,
+        removal_emoji_id: Id<EmojiMarker>,
+    ) -> &mut Self {
+        self.0
+            .srem(RedisKey::GuildEmojis { guild_id }, removal_emoji_id.get());
+        self
+    }
+
+    pub(crate) fn remove_guild_emojis(
+        &mut self,
+        guild_id: Id<GuildMarker>,
         removal_emoji_ids: &[Id<EmojiMarker>],
     ) -> &mut Self {
         self.0.srem(
@@ -59,11 +69,16 @@ impl<S: CacheStrategy> Pipe<S> {
         Ok(self)
     }
 
+    pub(crate) fn delete_emoji(&mut self, emoji_id: Id<EmojiMarker>) -> &mut Self {
+        self.0.del(emoji_id.get());
+        self
+    }
+
     pub(crate) fn delete_emojis(
         &mut self,
-        emojis: impl Iterator<Item = Id<EmojiMarker>>,
+        emoji_ids: impl Iterator<Item = Id<EmojiMarker>>,
     ) -> &mut Self {
-        self.0.del(emojis.map_redis_key());
+        self.0.del(emoji_ids.map_redis_key());
         self
     }
 }
