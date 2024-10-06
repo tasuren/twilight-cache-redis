@@ -26,6 +26,7 @@ atoi = "2.0.0"
 anyhow = "1.0.87"
 
 [dev-dependencies]
+redis-test = "0.6.0"
 static_assertions = "1.1.0"
 
 [package.metadata.docs.rs]

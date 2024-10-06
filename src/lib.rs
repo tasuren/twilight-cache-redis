@@ -5,6 +5,7 @@ mod config;
 mod connection;
 pub mod event;
 mod model;
+mod test;
 mod traits;
 
 use std::marker::PhantomData;
@@ -90,9 +91,9 @@ pub trait UpdateCache<S: CacheStrategy>: private::Sealed {
     ) -> Result<(), Error>;
 }
 
-pub struct DefaultCacheConfig;
+pub struct DefaultCacheStrategy;
 
-impl CacheStrategy for DefaultCacheConfig {
+impl CacheStrategy for DefaultCacheStrategy {
     type SerdeError = bincode::Error;
 
     type Channel = twilight_model::channel::Channel;
