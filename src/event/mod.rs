@@ -40,7 +40,6 @@ impl<S: CacheStrategy> UpdateCache<S> for UserUpdate {
 
 #[cfg(test)]
 mod tests {
-    use redis_test::{MockCmd, MockRedisConnection};
     use twilight_model::{
         gateway::payload::incoming::Ready,
         id::Id,
@@ -50,7 +49,7 @@ mod tests {
     use crate::test;
 
     #[test]
-    fn ready() {
+    fn test_ready() {
         test::block_on(async {
             let mut cache = test::redis_cache().await;
 
@@ -58,7 +57,7 @@ mod tests {
                 user: test::model::current_user(),
                 application: PartialApplication {
                     flags: ApplicationFlags::empty(),
-                    id: Id::new(0),
+                    id: Id::new(1),
                 },
                 guilds: Vec::new(),
                 resume_gateway_url: String::new(),
@@ -68,6 +67,13 @@ mod tests {
             };
 
             cache.update(event).await.unwrap();
+
+            let user = cache
+                .get_current_user(&mut cache.get_connection().await.unwrap())
+                .await
+                .unwrap()
+                .unwrap();
+            assert_eq!(user, test::model::current_user());
         });
     }
 }

@@ -124,7 +124,7 @@ pub async fn uncache_guild<S: CacheStrategy>(
         };
     }
 
-    if (cache.config.resource_types - ResourceType::GUILD).is_empty() {
+    if (cache.config.resource_type - ResourceType::GUILD).is_empty() {
         // If no other resource types are enabled, we shouldn't remove any other data.
         return Ok(());
     }

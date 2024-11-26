@@ -45,7 +45,7 @@ bitflags! {
 /// [`InMemoryCache`]: crate::inmemory::InMemoryCache
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
-    pub(super) resource_types: ResourceType,
+    pub(super) resource_type: ResourceType,
     pub(super) atomic: bool,
     pub(super) message_cache_size: usize,
 }
@@ -76,22 +76,48 @@ impl Config {
     /// Returns an immutable reference to the resource types enabled.
     ///
     /// Defaults to all resource types.
-    pub const fn resource_types(&self) -> ResourceType {
-        self.resource_types
+    pub const fn resource_type(&self) -> ResourceType {
+        self.resource_type
     }
 
     /// Returns a mutable reference to the resource types enabled.
-    pub fn resource_types_mut(&mut self) -> &mut ResourceType {
-        &mut self.resource_types
+    pub fn resource_type_mut(&mut self) -> &mut ResourceType {
+        &mut self.resource_type
     }
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            resource_types: ResourceType::all(),
+            resource_type: ResourceType::all(),
             atomic: true,
             message_cache_size: 100,
         }
+    }
+}
+
+#[derive(Default)]
+pub struct ConfigBuilder {
+    value: Config,
+}
+
+impl ConfigBuilder {
+    pub fn resource_type(mut self, resource_type: ResourceType) -> Self {
+        self.value.resource_type = resource_type;
+        self
+    }
+
+    pub fn message_cache_size(mut self, message_cache_size: usize) -> Self {
+        self.value.message_cache_size = message_cache_size;
+        self
+    }
+
+    pub fn atomic(mut self, atomic: bool) -> Self {
+        self.value.atomic = atomic;
+        self
+    }
+
+    pub fn build(self) -> Config {
+        self.value
     }
 }

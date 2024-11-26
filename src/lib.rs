@@ -12,7 +12,7 @@ use std::marker::PhantomData;
 
 use self::config::ResourceType;
 pub use self::{
-    config::Config,
+    config::{Config, ConfigBuilder},
     connection::{Connection, ConnectionDriver},
     traits::CacheStrategy,
 };
@@ -24,8 +24,8 @@ pub use bb8_redis;
 pub enum Error {
     #[error("User defined error is raised: {0}")]
     User(#[from] anyhow::Error),
-    #[error("Failed to process data during bincode.")]
-    Bincode(#[from] bincode::Error),
+    #[error("Failed to process data with serde.")]
+    Serde(#[from] serde_json::Error),
     #[error("Redis has raise error: {0}")]
     Redis(#[from] redis::RedisError),
     #[cfg(feature = "bb8")]
@@ -94,7 +94,7 @@ pub trait UpdateCache<S: CacheStrategy>: private::Sealed {
 pub struct DefaultCacheStrategy;
 
 impl CacheStrategy for DefaultCacheStrategy {
-    type SerdeError = bincode::Error;
+    type SerdeError = serde_json::Error;
 
     type Channel = twilight_model::channel::Channel;
     type ChannelVoiceState = model::CachedChannelVoiceState;
@@ -112,17 +112,17 @@ impl CacheStrategy for DefaultCacheStrategy {
     type VoiceState = model::CachedVoiceState;
 }
 
-pub struct RedisCache<S: CacheStrategy> {
+pub struct RedisCache<S: CacheStrategy = DefaultCacheStrategy> {
     connection_driver: ConnectionDriver,
     config: Config,
     _strategy: PhantomData<S>,
 }
 
 impl<S: CacheStrategy> RedisCache<S> {
-    pub fn new(connection_driver: ConnectionDriver) -> Self {
+    pub fn new(connection_driver: ConnectionDriver, config: Config) -> Self {
         Self {
             connection_driver,
-            config: Config::default(),
+            config,
             _strategy: PhantomData,
         }
     }
@@ -132,11 +132,11 @@ impl<S: CacheStrategy> RedisCache<S> {
     }
 
     pub fn wants(&self, resource_type: ResourceType) -> bool {
-        self.config.resource_types.contains(resource_type)
+        self.config.resource_type.contains(resource_type)
     }
 
     pub fn wants_any(&self, resource_type: ResourceType) -> bool {
-        self.config.resource_types.intersects(resource_type)
+        self.config.resource_type.intersects(resource_type)
     }
 
     pub async fn update(&mut self, cache: impl UpdateCache<S>) -> Result<(), Error> {
@@ -147,8 +147,8 @@ impl<S: CacheStrategy> RedisCache<S> {
 
         cache.update(self, &mut pipe).await?;
 
-        if pipe.is_empty() {
-            pipe.query(&mut self.get_connection().await?).await?;
+        if !pipe.is_empty() {
+            let _: (redis::Value,) = pipe.query(&mut self.get_connection().await?).await?;
         }
 
         Ok(())

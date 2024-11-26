@@ -3,12 +3,14 @@ use std::sync::OnceLock;
 use redis::Client;
 use tokio::runtime::Runtime;
 
-use crate::{ConnectionDriver, DefaultCacheStrategy, RedisCache};
+use crate::{Config, ConnectionDriver, DefaultCacheStrategy, RedisCache};
 
 pub(crate) fn runtime() -> &'static Runtime {
     static RUNTIME: OnceLock<Runtime> = OnceLock::new();
+
     RUNTIME.get_or_init(|| {
         tokio::runtime::Builder::new_current_thread()
+            .enable_io()
             .build()
             .unwrap()
     })
@@ -24,9 +26,12 @@ pub(crate) async fn redis_cache() -> RedisCache<DefaultCacheStrategy> {
     let url = option_env!("TEST_REDIS_URL").unwrap_or("redis://127.0.0.1");
     let client = REDIS.get_or_init(|| Client::open(url).unwrap());
 
-    RedisCache::new(ConnectionDriver::MultiplexedClone(
-        client.get_multiplexed_tokio_connection().await.unwrap(),
-    ))
+    RedisCache::new(
+        ConnectionDriver::MultiplexedClone(
+            client.get_multiplexed_tokio_connection().await.unwrap(),
+        ),
+        Config::default(),
+    )
 }
 
 pub mod model {
@@ -40,7 +45,7 @@ pub mod model {
             bot: true,
             discriminator: 1234,
             email: None,
-            id: Id::new(0),
+            id: Id::new(1),
             mfa_enabled: true,
             name: "current".to_owned(),
             verified: Some(false),

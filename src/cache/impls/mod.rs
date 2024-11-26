@@ -2,7 +2,7 @@ use redis::AsyncCommands;
 
 use crate::{CacheStrategy, Connection, Error, RedisCache};
 
-use super::{FromCachedRedisValue, Pipe, RedisKey, ToBytes};
+use super::{FromBytes, FromCachedRedisValue, Pipe, RedisKey, ToBytes};
 
 mod channel;
 mod emoji;

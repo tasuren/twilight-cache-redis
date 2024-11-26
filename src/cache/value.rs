@@ -10,8 +10,44 @@ use crate::Error;
 pub trait FromBytes: Sized {
     fn from_bytes(raw: &[u8]) -> Result<Self, Error>;
 }
+
+/// Implement `FromBytes` for the given models that implement `serde::Deserialize`.
+///
+/// # Notes
+/// This macro uses bincode crate to deserialize the data.
+#[macro_export]
+macro_rules! __impl_from_bytes_for_model {
+    ($($model:ty),*) => {
+        $(
+            impl $crate::cache::value::FromBytes for $model {
+                fn from_bytes(data: &[u8]) -> Result<Self, $crate::Error> {
+                    Ok(::serde_json::from_slice(data)?)
+                }
+            }
+        )*
+    };
+}
+
+pub use __impl_from_bytes_for_model as impl_from_bytes_for_model;
+
+impl<M> FromBytes for Id<M> {
+    fn from_bytes(raw: &[u8]) -> Result<Self, Error> {
+        let n = atoi(raw).ok_or_else(|| Error::Parse {
+            msg: "Failed to parse ID.".to_owned(),
+            response: format!("{raw:?}"),
+        })?;
+        Ok(Id::new(n))
+    }
+}
+
 pub trait FromCachedRedisValue: Sized {
     fn from_cached_redis_value(value: &Value) -> Result<Self, Error>;
+}
+
+impl FromCachedRedisValue for Value {
+    fn from_cached_redis_value(value: &Value) -> Result<Self, Error> {
+        Ok(value.clone())
+    }
 }
 
 impl<T: FromBytes> FromCachedRedisValue for T {
@@ -54,35 +90,6 @@ impl<T: FromCachedRedisValue> FromCachedRedisValue for Option<T> {
             Value::Nil => Ok(None),
             _ => T::from_cached_redis_value(value).map(Some),
         }
-    }
-}
-
-/// Implement `FromBytes` for the given models that implement `serde::Deserialize`.
-///
-/// # Notes
-/// This macro uses bincode crate to deserialize the data.
-#[macro_export]
-macro_rules! __impl_from_bytes_for_model {
-    ($($model:ty),*) => {
-        $(
-            impl $crate::cache::value::FromBytes for $model {
-                fn from_bytes(data: &[u8]) -> Result<Self, $crate::Error> {
-                    Ok(::bincode::deserialize(data)?)
-                }
-            }
-        )*
-    };
-}
-
-pub use __impl_from_bytes_for_model as impl_from_bytes_for_model;
-
-impl<M> FromBytes for Id<M> {
-    fn from_bytes(raw: &[u8]) -> Result<Self, Error> {
-        let n = atoi(raw).ok_or_else(|| Error::Parse {
-            msg: "Failed to parse ID.".to_owned(),
-            response: format!("{raw:?}"),
-        })?;
-        Ok(Id::new(n))
     }
 }
 
@@ -131,7 +138,7 @@ macro_rules! impl_drv_for_tuple {
                     )?,
                 )*);
 
-                if values.is_empty() {
+                if values.len() <= $n {
                     Ok(data)
                 } else {
                     Err(Error::Parse {
@@ -162,7 +169,7 @@ macro_rules! __impl_to_bytes_for_model {
         $(
             impl $crate::cache::ToBytes for $model {
                 fn to_bytes(&self) -> Result<Vec<u8>, $crate::Error> {
-                    Ok(::bincode::serialize(self)?)
+                    Ok(::serde_json::to_vec(self)?)
                 }
             }
         )*
